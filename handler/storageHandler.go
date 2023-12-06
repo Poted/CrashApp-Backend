@@ -183,3 +183,15 @@ func DeleteFile(c *fiber.Ctx) error {
 	return c.Status(204).Send([]byte("Succesfully removed file"))
 
 }
+
+func CreateFolder(c *fiber.Ctx) error {
+
+	body := models.Directory{}
+
+	err := c.BodyParser(&body)
+	if err != nil {
+		return c.Status(400).SendString(err.Error())
+	}
+
+	return c.Status(200).SendString("Created")
+}
