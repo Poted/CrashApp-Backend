@@ -19,6 +19,8 @@ func HttpClient() {
 
 func storageRouter(app *fiber.App) {
 
+	// Files:
+
 	app.Get("/filesList", FilesList)
 
 	app.Get("/getFileData/:id", GetFileData)
@@ -30,4 +32,9 @@ func storageRouter(app *fiber.App) {
 	app.Post("/saveFile", SaveFile)
 
 	app.Delete("/deleteFile/:id", DeleteFile)
+
+	// Directories:
+
+	app.Post("/createFolder", CreateFolder)
+
 }

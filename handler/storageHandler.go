@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"go_app/backend/errorz"
+	"go_app/backend/helperz"
 	"go_app/backend/internal"
 	"go_app/backend/models"
 	"log"
@@ -191,6 +192,16 @@ func CreateFolder(c *fiber.Ctx) error {
 	err := c.BodyParser(&body)
 	if err != nil {
 		return c.Status(400).SendString(err.Error())
+	}
+
+	err = helperz.DataBaseInsert(body, "directory")
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
+	}
+
+	err = helperz.DataBaseUpdate(body, "directory", &body.ID)
+	if err != nil {
+		return c.Status(500).SendString(err.Error())
 	}
 
 	return c.Status(200).SendString("Created")
