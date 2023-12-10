@@ -2,6 +2,7 @@ package helperz
 
 import (
 	"encoding/json"
+	"fmt"
 	"go_app/backend/errorz"
 	"reflect"
 )
@@ -58,4 +59,15 @@ func UpdateStruct(legacyStruct any, updateFields any) ([]byte, error) {
 	}
 
 	return jsn, nil
+}
+
+func PrettyPrint(data any) {
+
+	stcJSON, err := json.MarshalIndent(data, "", " ")
+	if err != nil {
+		errorz.SendError(err)
+	}
+
+	fmt.Printf("%+v\n", string(stcJSON))
+
 }

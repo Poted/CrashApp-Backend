@@ -3,42 +3,93 @@ package helperz
 import (
 	"encoding/json"
 	"fmt"
+	"go_app/backend/errorz"
 	"log"
 	"os"
+	"path/filepath"
 
-	"github.com/google/uuid"
+	"github.com/gofrs/uuid"
 )
 
-type IDataBase interface {
-	StructIterate(stc any) (map[string]interface{}, error)
-	DataBaseInsert(structModel interface{}, tableName string) error
+var dbPath = "C:/Users/ojpkm/Documents/go_app/Database"
+
+// Remember to 'defer table.Close()';
+func getTable(tableName string) *os.File {
+
+	dbPath = dbPath + "/%s.json"
+
+	jsonDB, err := os.OpenFile(fmt.Sprintf(dbPath, tableName), os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		return nil
+	}
+
+	return jsonDB
 }
 
 func DataBaseInsert(structModel interface{}, tableName string) error {
 
-	jsonDB, err := os.OpenFile(fmt.Sprintf("C:/Users/ojpkm/Documents/go_app/Database/%s.json", tableName), os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer jsonDB.Close()
+	table := getTable(tableName)
+	defer table.Close()
 
 	// Decode the existing JSON data from the file
 	var files []interface{}
-	decoder := json.NewDecoder(jsonDB)
+	decoder := json.NewDecoder(table)
 	if err := decoder.Decode(&files); err != nil && err.Error() != "EOF" {
-		log.Fatal(err)
+		return errorz.SendError(err)
 	}
 
 	// Append the new record to the existing data
 	files = append(files, structModel)
 
 	// Seek to the beginning of the file to overwrite the existing data
-	if _, err := jsonDB.Seek(0, 0); err != nil {
+	if _, err := table.Seek(0, 0); err != nil {
+		return errorz.SendError(err)
+	}
+
+	// Create a JSON encoder and encode the updated data to the file
+	encoder := json.NewEncoder(table)
+	if err := encoder.Encode(files); err != nil {
+		return errorz.SendError(err)
+	}
+
+	return nil
+}
+
+func DataBaseUpdate(structToSave any, tableName string, id *uuid.UUID) error {
+
+	table := getTable(tableName)
+	defer table.Close()
+
+	// Decode the existing JSON data from the file
+	var files []map[string]interface{}
+	decoder := json.NewDecoder(table)
+	if err := decoder.Decode(&files); err != nil && err.Error() != "EOF" {
+		log.Fatal(err)
+	}
+
+	for _, v := range files {
+		if v["id"] == id.String() {
+
+			newStruct, err := UpdateStruct(v, structToSave)
+			if err != nil {
+				return errorz.SendError(err)
+			}
+
+			err = json.Unmarshal(newStruct, &v)
+			if err != nil {
+				return errorz.SendError(err)
+			}
+
+		}
+	}
+
+	// Seek to the beginning of the file to overwrite the existing data
+	if _, err := table.Seek(0, 0); err != nil {
 		log.Fatal(err)
 	}
 
 	// Create a JSON encoder and encode the updated data to the file
-	encoder := json.NewEncoder(jsonDB)
+	encoder := json.NewEncoder(table)
 	if err := encoder.Encode(files); err != nil {
 		log.Fatal(err)
 	}
@@ -46,46 +97,52 @@ func DataBaseInsert(structModel interface{}, tableName string) error {
 	return nil
 }
 
-func DataBaseUpdate(structToSave interface{}, tableName string, id *uuid.UUID) error {
+func RestoreStorage(tableName string) error {
 
-	jsonDB, err := os.OpenFile(fmt.Sprintf("C:/Users/ojpkm/Documents/go_app/Database/%s.json", tableName), os.O_RDWR|os.O_CREATE, 0644)
+	storagePath := fmt.Sprint("C:/Users/ojpkm/Documents/go_app/Storage")
+
+	err := filepath.WalkDir(storagePath, visitFile)
 	if err != nil {
-		log.Fatal(err)
-	}
-	defer jsonDB.Close()
-
-	// Decode the existing JSON data from the file
-	// var files []interface{}
-	var files []map[string]interface{}
-	decoder := json.NewDecoder(jsonDB)
-	if err := decoder.Decode(&files); err != nil && err.Error() != "EOF" {
-		log.Fatal(err)
+		return errorz.SendError(err)
 	}
 
-	// Append the new record to the existing data
-	// files = append(files, structToSave)
+	return nil
+}
 
-	// recordsMap, err := StructIterate(files)
+func visitFile(fp string, fi os.DirEntry, err error) error {
 
-	// recordsMap["id"] = 2
-
-	for _, v := range files {
-		fmt.Printf("v: %v\n", v)
-		if v["id"] == id {
-			fmt.Printf("v: %v\n", v)
-		}
+	if err != nil {
+		fmt.Println(err) // can't walk here,
+		return nil       // but continue walking elsewhere
 	}
 
-	// Seek to the beginning of the file to overwrite the existing data
-	if _, err := jsonDB.Seek(0, 0); err != nil {
-		log.Fatal(err)
+	if fi.IsDir() {
+		return nil // not a file. ignore.
 	}
 
-	// Create a JSON encoder and encode the updated data to the file
-	encoder := json.NewEncoder(jsonDB)
-	if err := encoder.Encode(files); err != nil {
-		log.Fatal(err)
-	}
+	// sp, err := fi.Info()
+	// if err != nil {
+	// 	return errorz.SendError(err)
+	// }
+
+	// name := sp.Name()
+	// size := sp.Size()
+
+	// fmt.Printf("fp: %v\n", fp)
+
+	// fmt.Printf("name: %v\n", name)
+	// fmt.Printf("size: %v\n", size)
+
+	// file := models.File{
+	// 	ID:        uuid.FromStringOrNil(name),
+	// 	Name:      fmt.Sprint(name + "restored"),
+	// 	Size:      size,
+	// 	Directory: "",
+	// }
+
+	// fmt.Printf("file: %v\n", file)
+
+	// DataBaseInsert(file, "files-restored")
 
 	return nil
 }

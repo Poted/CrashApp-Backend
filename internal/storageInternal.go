@@ -9,7 +9,7 @@ import (
 	"go_app/backend/models"
 	"os"
 
-	"github.com/google/uuid"
+	"github.com/gofrs/uuid"
 )
 
 type IStorageInternal interface {
@@ -173,35 +173,3 @@ func (s *StorageInternal) DeleteFile(id *uuid.UUID) error {
 
 	return errors.New("cannot find a file")
 }
-
-// func (s *StorageInternal) DataBaseInsert(structModel interface{}, tableName string) error {
-
-// 	jsonDB, err := os.OpenFile(fmt.Sprintf("C:/Users/ojpkm/Documents/go_app/Database/%s.json", tableName), os.O_RDWR|os.O_CREATE, 0644)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer jsonDB.Close()
-
-// 	// Decode the existing JSON data from the file
-// 	var files []interface{}
-// 	decoder := json.NewDecoder(jsonDB)
-// 	if err := decoder.Decode(&files); err != nil && err.Error() != "EOF" {
-// 		log.Fatal(err)
-// 	}
-
-// 	// Append the new record to the existing data
-// 	files = append(files, structModel)
-
-// 	// Seek to the beginning of the file to overwrite the existing data
-// 	if _, err := jsonDB.Seek(0, 0); err != nil {
-// 		log.Fatal(err)
-// 	}
-
-// 	// Create a JSON encoder and encode the updated data to the file
-// 	encoder := json.NewEncoder(jsonDB)
-// 	if err := encoder.Encode(files); err != nil {
-// 		log.Fatal(err)
-// 	}
-
-// 	return nil
-// }

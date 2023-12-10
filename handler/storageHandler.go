@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
+	"github.com/gofrs/uuid"
 )
 
 var il = internal.New()
@@ -26,8 +26,13 @@ func SaveFile(c *fiber.Ctx) error {
 		errorz.SendError(err)
 	}
 
+	generateID, err := uuid.NewV7()
+	if err != nil {
+		return errorz.SendError(err)
+	}
+
 	fileModel := models.File{
-		ID:        uuid.New(),
+		ID:        generateID,
 		Name:      fileMultipart.Filename,
 		Size:      fileMultipart.Size,
 		Directory: "",
@@ -90,7 +95,7 @@ func GetFileData(c *fiber.Ctx) error {
 
 	id := c.Params("id")
 	storage := internal.New()
-	uuid, err := uuid.Parse(id)
+	uuid, err := uuid.FromString(id)
 	if err != nil {
 		return err
 	}
@@ -113,7 +118,7 @@ func UpdateFileData(c *fiber.Ctx) error {
 
 	id := c.Params("id")
 	storage := internal.New()
-	uuid, err := uuid.Parse(id)
+	uuid, err := uuid.FromString(id)
 	if err != nil {
 		return err
 	}
@@ -136,7 +141,7 @@ func UpdateFileData(c *fiber.Ctx) error {
 func GetFile(c *fiber.Ctx) error {
 
 	id := c.Params("id")
-	uuid, err := uuid.Parse(id)
+	uuid, err := uuid.FromString(id)
 	if err != nil {
 		return err
 	}
@@ -170,7 +175,7 @@ func GetFile(c *fiber.Ctx) error {
 func DeleteFile(c *fiber.Ctx) error {
 
 	id := c.Params("id")
-	uuid, err := uuid.Parse(id)
+	uuid, err := uuid.FromString(id)
 	if err != nil {
 		return c.Status(503).Send([]byte("cannot find a file"))
 	}
@@ -199,10 +204,29 @@ func CreateFolder(c *fiber.Ctx) error {
 		return c.Status(500).SendString(err.Error())
 	}
 
-	err = helperz.DataBaseUpdate(body, "directory", &body.ID)
-	if err != nil {
-		return c.Status(500).SendString(err.Error())
-	}
-
 	return c.Status(200).SendString("Created")
 }
+
+// func ChangeFolderName(c *fiber.Ctx) error {
+
+// 	body := models.Directory{}
+
+// 	err := c.BodyParser(&body)
+// 	if err != nil {
+// 		return c.Status(400).SendString(err.Error())
+// 	}
+
+// 	err = helperz.DataBaseUpdate(func() map[string]interface{} {
+// 		newBody, err := helperz.StructIterate(body)
+// 		if err != nil {
+// 			return nil
+// 		}
+
+// 		return
+// 	}(), "directory", &body.ID)
+// 	if err != nil {
+// 		return c.Status(500).SendString(err.Error())
+// 	}
+
+// 	return c.Status(200).SendString("Created")
+// }
