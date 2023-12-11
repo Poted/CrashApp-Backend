@@ -70,6 +70,8 @@ func DataBaseUpdate(structToSave any, tableName string, id *uuid.UUID) error {
 	for _, v := range files {
 		if v["id"] == id.String() {
 
+			fmt.Printf("v: %v\n", v)
+
 			newStruct, err := UpdateStruct(v, structToSave)
 			if err != nil {
 				return errorz.SendError(err)

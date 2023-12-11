@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"go_app/backend/errorz"
-	"go_app/backend/helperz"
 	"go_app/backend/internal"
 	"go_app/backend/models"
 	"log"
@@ -190,7 +189,7 @@ func DeleteFile(c *fiber.Ctx) error {
 
 }
 
-func CreateFolder(c *fiber.Ctx) error {
+func SaveFolder(c *fiber.Ctx) error {
 
 	body := models.Directory{}
 
@@ -199,34 +198,27 @@ func CreateFolder(c *fiber.Ctx) error {
 		return c.Status(400).SendString(err.Error())
 	}
 
-	err = helperz.DataBaseInsert(body, "directory")
+	err = il.CreateFolder(&body)
 	if err != nil {
-		return c.Status(500).SendString(err.Error())
+		return errorz.SendError(err)
 	}
 
-	return c.Status(200).SendString("Created")
+	return c.Status(201).Send([]byte("Succesfully created a file"))
 }
 
-// func ChangeFolderName(c *fiber.Ctx) error {
+func EditFolder(c *fiber.Ctx) error {
 
-// 	body := models.Directory{}
+	body := models.Directory{}
 
-// 	err := c.BodyParser(&body)
-// 	if err != nil {
-// 		return c.Status(400).SendString(err.Error())
-// 	}
+	err := c.BodyParser(&body)
+	if err != nil {
+		return c.Status(400).SendString(err.Error())
+	}
 
-// 	err = helperz.DataBaseUpdate(func() map[string]interface{} {
-// 		newBody, err := helperz.StructIterate(body)
-// 		if err != nil {
-// 			return nil
-// 		}
+	err = il.UpdateFolderData(&body.ID, &body)
+	if err == nil {
+		return c.Status(204).Send([]byte("Succesfully edited a file"))
+	}
 
-// 		return
-// 	}(), "directory", &body.ID)
-// 	if err != nil {
-// 		return c.Status(500).SendString(err.Error())
-// 	}
-
-// 	return c.Status(200).SendString("Created")
-// }
+	return nil
+}

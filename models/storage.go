@@ -10,7 +10,6 @@ type File struct {
 }
 
 type Directory struct {
-	ID       uuid.UUID `json:"id"`
-	Name     string    `json:"name"`
-	ParentID uuid.UUID `json:"parentID"`
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
 }

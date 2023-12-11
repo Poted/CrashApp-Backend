@@ -18,6 +18,7 @@ func StructIterate(stc any) (map[string]interface{}, error) {
 	stcJSON, err := json.Marshal(&stc)
 	if err != nil {
 		return nil, errorz.SendError(err)
+
 	}
 
 	err = json.Unmarshal(stcJSON, &stcMap)
@@ -36,7 +37,6 @@ func UpdateStruct(legacyStruct any, updateFields any) ([]byte, error) {
 	if err != nil {
 		return nil, errorz.SendError(err)
 	}
-
 	// Converting new fields into map[string]interface{}
 	mapUF, err := StructIterate(updateFields)
 	if err != nil {

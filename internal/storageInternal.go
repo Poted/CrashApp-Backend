@@ -18,8 +18,9 @@ type IStorageInternal interface {
 	UpdateFileData(id *uuid.UUID, fileModel *models.File) (*[]byte, error)
 	DeleteFile(id *uuid.UUID) error
 
+	CreateFolder(folder *models.Directory) error
 	ReadFoldersList() ([]models.Directory, error)
-	// DataBaseInsert(structModel interface{}, tableName string) error
+	UpdateFolderData(id *uuid.UUID, fieldsToUpdate *models.Directory) error
 }
 
 type StorageInternal struct{}
@@ -51,7 +52,7 @@ func (s *StorageInternal) ReadFilesList() ([]models.File, error) {
 
 func (s *StorageInternal) ReadFoldersList() ([]models.Directory, error) {
 
-	jsonDB, err := os.ReadFile("C:/Users/ojpkm/Documents/go_app/Database/directories.json")
+	jsonDB, err := os.ReadFile("C:/Users/ojpkm/Documents/go_app/Database/directory.json")
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +85,58 @@ func (s *StorageInternal) ReadFileData(id *uuid.UUID) (*models.File, error) {
 	}
 
 	return nil, errors.New("cannot find file")
+}
+
+func (s *StorageInternal) ReadFolderData(id *uuid.UUID) (*models.Directory, error) {
+
+	folders, err := s.ReadFoldersList()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range folders {
+		if v.ID == *id {
+			return &v, nil
+		}
+	}
+
+	return nil, errors.New("cannot find folder")
+}
+
+func (s *StorageInternal) UpdateFolderData(id *uuid.UUID, fieldsToUpdate *models.Directory) error {
+
+	folders, err := s.ReadFoldersList()
+	if err != nil {
+		return errorz.SendError(err)
+	}
+
+	var newStruct []byte
+
+	for _, folder := range folders {
+		if folder.ID == *id {
+
+			// go func() error {
+
+			newStruct, err = helperz.UpdateStruct(folder, fieldsToUpdate)
+			if err != nil {
+				return errorz.SendError(err)
+			}
+
+			err = helperz.DataBaseUpdate(&newStruct, "directory", id)
+			if err != nil {
+				return errorz.SendError(err)
+			}
+
+			return nil
+			// }()
+
+		} else {
+			return errorz.SendError(fmt.Errorf("can't find this folder"))
+		}
+
+	}
+
+	return nil
 }
 
 func (s *StorageInternal) UpdateFileData(id *uuid.UUID, fieldsToUpdate *models.File) (*[]byte, error) {
@@ -172,4 +225,14 @@ func (s *StorageInternal) DeleteFile(id *uuid.UUID) error {
 	}
 
 	return errors.New("cannot find a file")
+}
+
+func (s *StorageInternal) CreateFolder(folder *models.Directory) error {
+
+	err := helperz.DataBaseInsert(folder, "directory")
+	if err != nil {
+		return errorz.SendError(err)
+	}
+
+	return nil
 }

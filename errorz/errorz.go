@@ -31,9 +31,21 @@ func SendError(errz error) error {
 	var startIcon = "\021"
 	var secondColor = "\033[34m"
 
+	fmt.Printf("errz: %v\n", errz)
+
 	appError := &AppError{
-		Error:    errz,
-		ErrMsg:   errors.Unwrap(errz).Error(),
+		Error: errz,
+		ErrMsg: func() string {
+
+			if errors.Unwrap(errz) != nil { /// HANDLE PANIC
+				err := errors.Unwrap(errz)
+				if err != nil {
+					return "1"
+				}
+				return errors.Unwrap(errz).Error()
+			}
+			return errz.Error()
+		}(),
 		FuncLine: getLineNumber(),
 		Function: getFunctionName(),
 		FuncPath: frame.File,

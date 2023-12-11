@@ -35,6 +35,7 @@ func storageRouter(app *fiber.App) {
 
 	// Directories:
 
-	app.Post("/createFolder", CreateFolder)
+	app.Post("/SaveFolder", SaveFolder)
+	app.Put("/EditFolder", EditFolder)
 
 }
