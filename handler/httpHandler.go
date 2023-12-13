@@ -22,20 +22,16 @@ func storageRouter(app *fiber.App) {
 	// Files:
 
 	app.Get("/filesList", FilesList)
-
 	app.Get("/getFileData/:id", GetFileData)
-
 	app.Patch("/updateFile/:id", UpdateFileData)
-
 	app.Get("/getFile/:id", GetFile)
-
 	app.Post("/saveFile", SaveFile)
-
 	app.Delete("/deleteFile/:id", DeleteFile)
 
 	// Directories:
 
 	app.Post("/SaveFolder", SaveFolder)
+	app.Get("/GetFolders", GetFolders)
 	app.Put("/EditFolder", EditFolder)
 
 }

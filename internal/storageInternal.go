@@ -8,6 +8,7 @@ import (
 	"go_app/backend/helperz"
 	"go_app/backend/models"
 	"os"
+	"reflect"
 
 	"github.com/gofrs/uuid"
 )
@@ -20,6 +21,7 @@ type IStorageInternal interface {
 
 	CreateFolder(folder *models.Directory) error
 	ReadFoldersList() ([]models.Directory, error)
+	GetFolders() (*[]models.Directory, error)
 	UpdateFolderData(id *uuid.UUID, fieldsToUpdate *models.Directory) error
 }
 
@@ -115,23 +117,24 @@ func (s *StorageInternal) UpdateFolderData(id *uuid.UUID, fieldsToUpdate *models
 	for _, folder := range folders {
 		if folder.ID == *id {
 
-			// go func() error {
+			go func(folder *models.Directory) error {
 
-			newStruct, err = helperz.UpdateStruct(folder, fieldsToUpdate)
-			if err != nil {
-				return errorz.SendError(err)
-			}
+				newStruct, err = helperz.UpdateStruct(folder, fieldsToUpdate)
+				if err != nil {
+					return errorz.SendError(err)
+				}
 
-			err = helperz.DataBaseUpdate(&newStruct, "directory", id)
-			if err != nil {
-				return errorz.SendError(err)
-			}
+				fmt.Printf("reflect.TypeOf(&newStruct): %v\n", reflect.TypeOf(&newStruct))
+				fmt.Printf("reflect.TypeOf(id): %v\n", reflect.TypeOf(id))
 
-			return nil
-			// }()
+				err = helperz.DataBaseUpdate(&newStruct, "directory", id)
+				if err != nil {
+					return errorz.SendError(err)
+				}
 
-		} else {
-			return errorz.SendError(fmt.Errorf("can't find this folder"))
+				return nil
+			}(&folder)
+
 		}
 
 	}
@@ -229,10 +232,55 @@ func (s *StorageInternal) DeleteFile(id *uuid.UUID) error {
 
 func (s *StorageInternal) CreateFolder(folder *models.Directory) error {
 
-	err := helperz.DataBaseInsert(folder, "directory")
+	id, err := uuid.NewV7()
+	if err != nil {
+		return errorz.SendError(err)
+	}
+
+	folder.ID = id
+
+	fmt.Print("saved")
+	helperz.PrettyPrint(folder)
+
+	err = helperz.DataBaseInsert(folder, "directory")
 	if err != nil {
 		return errorz.SendError(err)
 	}
 
 	return nil
+}
+
+func (s *StorageInternal) GetFolders() (*[]models.Directory, error) {
+
+	folders, err := helperz.GetRecordsList("directory")
+	if err != nil {
+		return nil, errorz.SendError(err)
+	}
+
+	foldersModel := []models.Directory{}
+
+	for _, v := range *folders {
+
+		foldersModel = append(foldersModel, func() models.Directory {
+
+			folder := models.Directory{}
+
+			id, ok := v["id"].(string)
+			if !ok {
+				fmt.Errorf("cannot parse ID")
+			}
+
+			name, ok := v["name"].(string)
+			if !ok {
+				fmt.Errorf("cannot parse ID")
+			}
+
+			folder.ID = uuid.FromStringOrNil(id)
+			folder.Name = name
+
+			return folder
+		}())
+	}
+
+	return &foldersModel, nil
 }

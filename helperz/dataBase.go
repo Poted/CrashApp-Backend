@@ -14,29 +14,84 @@ import (
 var dbPath = "C:/Users/ojpkm/Documents/go_app/Database"
 
 // Remember to 'defer table.Close()';
-func getTable(tableName string) *os.File {
+func getTable(tableName string) (*os.File, error) {
 
-	dbPath = dbPath + "/%s.json"
+	path := dbPath + "/%s.json"
 
-	jsonDB, err := os.OpenFile(fmt.Sprintf(dbPath, tableName), os.O_RDWR|os.O_CREATE, 0644)
+	jsonDB, err := os.OpenFile(fmt.Sprintf(path, tableName), os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
-		return nil
+		return nil, errorz.SendError(err)
 	}
 
-	return jsonDB
+	return jsonDB, nil
+}
+
+func GetRecordsList(tableName string) (*[]map[string]interface{}, error) {
+
+	table, err := getTable(tableName)
+	if err != nil {
+		return nil, errorz.SendError(err)
+	}
+	defer table.Close()
+
+	decoder := json.NewDecoder(table)
+
+	var Ifiles []interface{}
+	var files []map[string]interface{}
+
+	if err := decoder.Decode(&files); err != nil && err.Error() != "EOF" {
+		return nil, errorz.SendError(err)
+	}
+
+	for _, file := range Ifiles {
+
+		f, ok := file.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("cannot read data")
+		}
+		files = append(files, f)
+	}
+
+	return &files, nil
+}
+
+func GetSingleRecord(ID *uuid.UUID, tableName string) (*map[string]interface{}, error) {
+
+	records, err := GetRecordsList(tableName)
+	if err != nil {
+		return nil, errorz.SendError(err)
+	}
+
+	for _, r := range *records {
+
+		for key, value := range r {
+			if key == "id" {
+				if value == ID {
+					return &r, nil
+				}
+			}
+		}
+
+	}
+
+	return nil, fmt.Errorf("not found")
 }
 
 func DataBaseInsert(structModel interface{}, tableName string) error {
 
-	table := getTable(tableName)
+	table, err := getTable(tableName)
+	if err != nil {
+		return errorz.SendError(err)
+	}
 	defer table.Close()
 
 	// Decode the existing JSON data from the file
 	var files []interface{}
 	decoder := json.NewDecoder(table)
+
 	if err := decoder.Decode(&files); err != nil && err.Error() != "EOF" {
 		return errorz.SendError(err)
-	}
+	} // stond bugi wyszli
 
 	// Append the new record to the existing data
 	files = append(files, structModel)
@@ -57,7 +112,10 @@ func DataBaseInsert(structModel interface{}, tableName string) error {
 
 func DataBaseUpdate(structToSave any, tableName string, id *uuid.UUID) error {
 
-	table := getTable(tableName)
+	table, err := getTable(tableName)
+	if err != nil {
+		return errorz.SendError(err)
+	}
 	defer table.Close()
 
 	// Decode the existing JSON data from the file
@@ -99,9 +157,9 @@ func DataBaseUpdate(structToSave any, tableName string, id *uuid.UUID) error {
 	return nil
 }
 
-func RestoreStorage(tableName string) error {
+func GetStorage(tableName string) error {
 
-	storagePath := fmt.Sprint("C:/Users/ojpkm/Documents/go_app/Storage")
+	storagePath := "C:/Users/ojpkm/Documents/go_app/Storage"
 
 	err := filepath.WalkDir(storagePath, visitFile)
 	if err != nil {
@@ -121,30 +179,6 @@ func visitFile(fp string, fi os.DirEntry, err error) error {
 	if fi.IsDir() {
 		return nil // not a file. ignore.
 	}
-
-	// sp, err := fi.Info()
-	// if err != nil {
-	// 	return errorz.SendError(err)
-	// }
-
-	// name := sp.Name()
-	// size := sp.Size()
-
-	// fmt.Printf("fp: %v\n", fp)
-
-	// fmt.Printf("name: %v\n", name)
-	// fmt.Printf("size: %v\n", size)
-
-	// file := models.File{
-	// 	ID:        uuid.FromStringOrNil(name),
-	// 	Name:      fmt.Sprint(name + "restored"),
-	// 	Size:      size,
-	// 	Directory: "",
-	// }
-
-	// fmt.Printf("file: %v\n", file)
-
-	// DataBaseInsert(file, "files-restored")
 
 	return nil
 }

@@ -31,8 +31,6 @@ func SendError(errz error) error {
 	var startIcon = "\021"
 	var secondColor = "\033[34m"
 
-	fmt.Printf("errz: %v\n", errz)
-
 	appError := &AppError{
 		Error: errz,
 		ErrMsg: func() string {
@@ -44,6 +42,7 @@ func SendError(errz error) error {
 				}
 				return errors.Unwrap(errz).Error()
 			}
+
 			return errz.Error()
 		}(),
 		FuncLine: getLineNumber(),

@@ -14,6 +14,9 @@ type IHelperz interface {
 // Converting a struct into a map[string]interface representation of a json.
 func StructIterate(stc any) (map[string]interface{}, error) {
 
+	thaip := reflect.TypeOf(stc)
+	fmt.Printf("thaip: %v\n", thaip)
+
 	var stcMap map[string]interface{}
 	stcJSON, err := json.Marshal(&stc)
 	if err != nil {

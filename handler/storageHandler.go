@@ -206,6 +206,16 @@ func SaveFolder(c *fiber.Ctx) error {
 	return c.Status(201).Send([]byte("Succesfully created a file"))
 }
 
+func GetFolders(c *fiber.Ctx) error {
+
+	folders, err := il.GetFolders()
+	if err != nil {
+		return err
+	}
+
+	return c.Status(200).JSON(folders)
+}
+
 func EditFolder(c *fiber.Ctx) error {
 
 	body := models.Directory{}
