@@ -21,7 +21,7 @@ func storageRouter(app *fiber.App) {
 
 	// Files:
 
-	app.Get("/filesList", FilesList)
+	app.Get("/filesList/:directory_id", FilesList)
 	app.Get("/getFileData/:id", GetFileData)
 	app.Patch("/updateFile/:id", UpdateFileData)
 	app.Get("/getFile/:id", GetFile)
@@ -33,5 +33,6 @@ func storageRouter(app *fiber.App) {
 	app.Post("/SaveFolder", SaveFolder)
 	app.Get("/GetFolders", GetFolders)
 	app.Put("/EditFolder", EditFolder)
+	app.Delete("/DeleteFolder/:id", DeleteFolder)
 
 }

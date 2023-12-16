@@ -9,6 +9,7 @@ import (
 	"go_app/backend/models"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/gofrs/uuid"
 )
@@ -19,10 +20,11 @@ type IStorageInternal interface {
 	UpdateFileData(id *uuid.UUID, fileModel *models.File) (*[]byte, error)
 	DeleteFile(id *uuid.UUID) error
 
-	CreateFolder(folder *models.Directory) error
+	CreateFolder(folder *models.Directory) (*models.Directory, error)
 	ReadFoldersList() ([]models.Directory, error)
 	GetFolders() (*[]models.Directory, error)
 	UpdateFolderData(id *uuid.UUID, fieldsToUpdate *models.Directory) error
+	DeleteFolder(id *uuid.UUID) error
 }
 
 type StorageInternal struct{}
@@ -230,11 +232,43 @@ func (s *StorageInternal) DeleteFile(id *uuid.UUID) error {
 	return errors.New("cannot find a file")
 }
 
-func (s *StorageInternal) CreateFolder(folder *models.Directory) error {
+func (s *StorageInternal) DeleteFolder(id *uuid.UUID) error {
+
+	folders, err := s.GetFolders()
+	if err != nil {
+		return errorz.SendError(err)
+	}
+
+	folds := *folders
+
+	for i, v := range folds {
+
+		if v.ID == *id {
+
+			folds = append(folds[:i], folds[i+1:]...)
+
+			editedJSON, err := json.Marshal(folds)
+			if err != nil {
+				return errorz.SendError(err)
+			}
+
+			err = os.WriteFile("C:/Users/ojpkm/Documents/go_app/Database/directory.json", editedJSON, os.ModeAppend)
+			if err != nil {
+				return errorz.SendError(err)
+			}
+
+			return nil
+		}
+	}
+
+	return errors.New("cannot find a folder")
+}
+
+func (s *StorageInternal) CreateFolder(folder *models.Directory) (*models.Directory, error) {
 
 	id, err := uuid.NewV7()
 	if err != nil {
-		return errorz.SendError(err)
+		return nil, errorz.SendError(err)
 	}
 
 	folder.ID = id
@@ -244,10 +278,10 @@ func (s *StorageInternal) CreateFolder(folder *models.Directory) error {
 
 	err = helperz.DataBaseInsert(folder, "directory")
 	if err != nil {
-		return errorz.SendError(err)
+		return nil, errorz.SendError(err)
 	}
 
-	return nil
+	return folder, nil
 }
 
 func (s *StorageInternal) GetFolders() (*[]models.Directory, error) {
@@ -258,6 +292,7 @@ func (s *StorageInternal) GetFolders() (*[]models.Directory, error) {
 	}
 
 	foldersModel := []models.Directory{}
+	mainFound := false
 
 	for _, v := range *folders {
 
@@ -280,6 +315,26 @@ func (s *StorageInternal) GetFolders() (*[]models.Directory, error) {
 
 			return folder
 		}())
+
+		if strings.ToLower(v["name"].(string)) == "main" {
+			mainFound = true
+		}
+
+	}
+
+	if !mainFound {
+
+		main, err := s.CreateFolder(func() *models.Directory {
+			return &models.Directory{
+				Name: "Main",
+			}
+		}())
+		if err != nil {
+			fmt.Errorf("cannot create Main")
+		}
+
+		foldersModel = append(foldersModel, *main)
+
 	}
 
 	return &foldersModel, nil

@@ -82,6 +82,18 @@ func FilesList(c *fiber.Ctx) error {
 		return err
 	}
 
+	id := c.Params("directory_id")
+
+	if id != "" {
+
+		for i, v := range files {
+			if v.Directory != id {
+				files = append(files[:i], files[:i+1]...)
+			}
+		}
+
+	}
+
 	formatedData, err := json.Marshal(files)
 	if err != nil {
 		return err
@@ -189,6 +201,26 @@ func DeleteFile(c *fiber.Ctx) error {
 
 }
 
+func DeleteFolder(c *fiber.Ctx) error {
+
+	id := c.Params("id")
+	uuid, err := uuid.FromString(id)
+	if err != nil {
+		return c.Status(503).SendString(err.Error())
+	}
+
+	fmt.Printf("id: %v\n", id)
+
+	storage := il
+	err = storage.DeleteFolder(&uuid)
+	if err != nil {
+		return c.Status(503).Send([]byte("cannot find a folder"))
+	}
+
+	return c.Status(204).Send([]byte("Succesfully removed a folder"))
+
+}
+
 func SaveFolder(c *fiber.Ctx) error {
 
 	body := models.Directory{}
@@ -198,7 +230,7 @@ func SaveFolder(c *fiber.Ctx) error {
 		return c.Status(400).SendString(err.Error())
 	}
 
-	err = il.CreateFolder(&body)
+	_, err = il.CreateFolder(&body)
 	if err != nil {
 		return errorz.SendError(err)
 	}
