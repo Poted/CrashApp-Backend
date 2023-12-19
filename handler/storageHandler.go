@@ -15,7 +15,9 @@ import (
 	"github.com/gofrs/uuid"
 )
 
-var il = internal.New()
+// var il = internal.New()
+
+var storage = internal.New()
 
 func SaveFile(c *fiber.Ctx) error {
 
@@ -25,16 +27,27 @@ func SaveFile(c *fiber.Ctx) error {
 		errorz.SendError(err)
 	}
 
+	directory_id := c.Params("directory_id")
+
 	generateID, err := uuid.NewV7()
 	if err != nil {
 		return errorz.SendError(err)
 	}
 
 	fileModel := models.File{
-		ID:        generateID,
-		Name:      fileMultipart.Filename,
-		Size:      fileMultipart.Size,
-		Directory: "",
+		ID:   generateID,
+		Name: fileMultipart.Filename,
+		Size: fileMultipart.Size,
+		Directory: func() string {
+			if directory_id == "1" {
+				folder, err := storage.ReadFolderData(nil, "main")
+				if err != nil {
+					return ""
+				}
+				return folder.ID.String()
+			}
+			return directory_id
+		}(),
 	}
 
 	jsonDB, err := os.OpenFile("C:/Users/ojpkm/Documents/go_app/Database/files.json", os.O_RDWR|os.O_CREATE, 0644)
@@ -75,28 +88,33 @@ func SaveFile(c *fiber.Ctx) error {
 
 func FilesList(c *fiber.Ctx) error {
 
-	storage := internal.New()
-
 	files, err := storage.ReadFilesList()
 	if err != nil {
-		return err
+		return errorz.SendError(err)
 	}
 
 	id := c.Params("directory_id")
 
-	if id != "" {
+	if id == "1" {
 
-		for i, v := range files {
-			if v.Directory != id {
-				files = append(files[:i], files[:i+1]...)
-			}
+		folder, err := storage.ReadFolderData(nil, "main")
+		if err != nil {
+			return errorz.SendError(err)
 		}
-
+		id = folder.ID.String()
 	}
 
-	formatedData, err := json.Marshal(files)
+	output := []models.File{}
+
+	for _, v := range files {
+		if v.Directory == id {
+			output = append(output, v)
+		}
+	}
+
+	formatedData, err := json.Marshal(output)
 	if err != nil {
-		return err
+		return errorz.SendError(err)
 	}
 
 	return c.Send(formatedData)
@@ -157,7 +175,6 @@ func GetFile(c *fiber.Ctx) error {
 		return err
 	}
 
-	storage := il
 	fileData, err := storage.ReadFileData(&uuid)
 	if err != nil {
 		return err
@@ -191,7 +208,6 @@ func DeleteFile(c *fiber.Ctx) error {
 		return c.Status(503).Send([]byte("cannot find a file"))
 	}
 
-	storage := il
 	err = storage.DeleteFile(&uuid)
 	if err != nil {
 		return c.Status(503).Send([]byte("cannot find a file"))
@@ -209,9 +225,6 @@ func DeleteFolder(c *fiber.Ctx) error {
 		return c.Status(503).SendString(err.Error())
 	}
 
-	fmt.Printf("id: %v\n", id)
-
-	storage := il
 	err = storage.DeleteFolder(&uuid)
 	if err != nil {
 		return c.Status(503).Send([]byte("cannot find a folder"))
@@ -230,7 +243,7 @@ func SaveFolder(c *fiber.Ctx) error {
 		return c.Status(400).SendString(err.Error())
 	}
 
-	_, err = il.CreateFolder(&body)
+	_, err = storage.CreateFolder(&body)
 	if err != nil {
 		return errorz.SendError(err)
 	}
@@ -240,7 +253,7 @@ func SaveFolder(c *fiber.Ctx) error {
 
 func GetFolders(c *fiber.Ctx) error {
 
-	folders, err := il.GetFolders()
+	folders, err := storage.GetFolders()
 	if err != nil {
 		return err
 	}
@@ -257,7 +270,7 @@ func EditFolder(c *fiber.Ctx) error {
 		return c.Status(400).SendString(err.Error())
 	}
 
-	err = il.UpdateFolderData(&body.ID, &body)
+	err = storage.UpdateFolderData(&body.ID, &body)
 	if err == nil {
 		return c.Status(204).Send([]byte("Succesfully edited a file"))
 	}

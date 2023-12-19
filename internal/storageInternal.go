@@ -23,6 +23,7 @@ type IStorageInternal interface {
 	CreateFolder(folder *models.Directory) (*models.Directory, error)
 	ReadFoldersList() ([]models.Directory, error)
 	GetFolders() (*[]models.Directory, error)
+	ReadFolderData(id *uuid.UUID, name string) (*models.Directory, error)
 	UpdateFolderData(id *uuid.UUID, fieldsToUpdate *models.Directory) error
 	DeleteFolder(id *uuid.UUID) error
 }
@@ -91,11 +92,19 @@ func (s *StorageInternal) ReadFileData(id *uuid.UUID) (*models.File, error) {
 	return nil, errors.New("cannot find file")
 }
 
-func (s *StorageInternal) ReadFolderData(id *uuid.UUID) (*models.Directory, error) {
+func (s *StorageInternal) ReadFolderData(id *uuid.UUID, name string) (*models.Directory, error) {
 
 	folders, err := s.ReadFoldersList()
 	if err != nil {
 		return nil, err
+	}
+
+	if name != "" {
+		for _, v := range folders {
+			if strings.ToLower(v.Name) == strings.ToLower(name) {
+				return &v, nil
+			}
+		}
 	}
 
 	for _, v := range folders {
@@ -241,6 +250,11 @@ func (s *StorageInternal) DeleteFolder(id *uuid.UUID) error {
 
 	folds := *folders
 
+	files, err := s.ReadFilesList()
+	if err != nil {
+		return errorz.SendError(err)
+	}
+
 	for i, v := range folds {
 
 		if v.ID == *id {
@@ -257,8 +271,23 @@ func (s *StorageInternal) DeleteFolder(id *uuid.UUID) error {
 				return errorz.SendError(err)
 			}
 
-			return nil
 		}
+
+	}
+
+	for _, v := range files {
+
+		if fileDirID := func() string {
+			return id.String()
+		}(); fileDirID == v.Directory {
+			fmt.Printf("dirid: %v\n", fileDirID)
+			err = s.DeleteFile(id)
+			if err != nil {
+				fmt.Printf("id: %v\n", id)
+				return errorz.SendError(err)
+			}
+		}
+
 	}
 
 	return errors.New("cannot find a folder")
