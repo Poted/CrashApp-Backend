@@ -252,7 +252,7 @@ func (s *StorageInternal) DeleteFolder(id *uuid.UUID) error {
 
 	files, err := s.ReadFilesList()
 	if err != nil {
-		return errorz.SendError(err)
+		errorz.SendError(err)
 	}
 
 	for i, v := range folds {
