@@ -19,6 +19,8 @@ func HttpClient() {
 
 func storageRouter(app *fiber.App) {
 
+	app.Get("/getIP", getIP)
+
 	// Files:
 
 	app.Get("/filesList/:directory_id", FilesList)
