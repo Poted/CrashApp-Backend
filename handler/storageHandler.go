@@ -1,17 +1,13 @@
 package handler
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"go_app/backend/errorz"
 	"go_app/backend/internal"
 	"go_app/backend/models"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strings"
 
@@ -19,122 +15,8 @@ import (
 	"github.com/gofrs/uuid"
 )
 
-// var il = internal.New()
-
 var storage = internal.New()
 
-type GeoIPResponse struct {
-	IP          string  `json:"ip"`
-	CountryCode string  `json:"country_code"`
-	CountryName string  `json:"country_name"`
-	RegionCode  string  `json:"region_code"`
-	RegionName  string  `json:"region_name"`
-	City        string  `json:"city"`
-	ZipCode     string  `json:"zip_code"`
-	TimeZone    string  `json:"time_zone"`
-	Latitude    float64 `json:"latitude"`
-	Longitude   float64 `json:"longitude"`
-	MetroCode   int     `json:"metro_code"`
-}
-
-func getIP(c *fiber.Ctx) error {
-
-	ip := c.IP() // Example IP address, you can replace it with the actual IP
-
-	// Fetch GeoIP information from the API
-	resp, err := http.Get("https://freegeoip.app/json/" + ip)
-	if err != nil {
-		fmt.Println("Error fetching GeoIP data:", err)
-		// return
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-		// return
-	}
-
-	// Parse the JSON response
-	var geoIP GeoIPResponse
-	err = json.Unmarshal(body, &geoIP)
-	if err != nil {
-		fmt.Println("Error parsing JSON:", err)
-		// return
-	}
-
-	some := map[string]interface{}{
-		"ip":           geoIP.IP,
-		"country_code": geoIP.CountryCode,
-		"country_name": geoIP.CountryName,
-		"region_code":  geoIP.RegionCode,
-		"region_name":  geoIP.RegionName,
-		"city":         geoIP.City,
-		"zip_code":     geoIP.ZipCode,
-		"time_zone":    geoIP.TimeZone,
-		"latitude":     geoIP.Latitude,
-		"longitude":    geoIP.Longitude,
-		"metro_code":   geoIP.MetroCode,
-	}
-
-	_ = some
-
-	// return c.JSON(fiber.Map{
-	// 	"ip":           geoIP.IP,
-	// 	"country_code": geoIP.CountryCode,
-	// 	"country_name": geoIP.CountryName,
-	// 	"region_code":  geoIP.RegionCode,
-	// 	"region_name":  geoIP.RegionName,
-	// 	"city":         geoIP.City,
-	// 	"zip_code":     geoIP.ZipCode,
-	// 	"time_zone":    geoIP.TimeZone,
-	// 	"latitude":     geoIP.Latitude,
-	// 	"longitude":    geoIP.Longitude,
-	// 	"metro_code":   geoIP.MetroCode,
-	// })
-
-	somefunc(c)
-
-	return nil
-
-}
-
-// ////////////////////
-func somefunc(c *fiber.Ctx) {
-
-	accountHandler := &AccountHandler{AccountNotifier: SomeNotifier{}}
-
-	accountHandler.handleCreateAccount(c)
-
-}
-
-type AccountNotifier interface {
-	NotifyAccountCreated(context.Context, Account) error
-}
-
-type SomeNotifier struct{}
-type AccountHandler struct {
-	AccountNotifier AccountNotifier
-}
-
-func (s SomeNotifier) NotifyAccountCreated(ctx context.Context, account Account) error {
-	fmt.Printf("Created %s, %s", account.Email, account.Username)
-	return nil
-}
-
-type Account struct {
-	Username string
-	Email    string
-}
-
-func (h *AccountHandler) handleCreateAccount(c *fiber.Ctx) {
-
-	h.AccountNotifier.NotifyAccountCreated(c.Context(), Account{Username: "Some", Email: "XDSS@DSS.CJJ"})
-
-	c.Send(bytes.NewBufferString("HIXD").Bytes())
-}
-
-// /////////////////////
 func SaveFile(c *fiber.Ctx) error {
 
 	// Get file from request body
