@@ -9,12 +9,27 @@ func HttpClient() {
 
 	app := fiber.New()
 
+	app.Use(recoverMiddleware)
+
 	app.Use(cors.New())
 
 	storageRouter(app)
 
 	app.Listen(":80")
 
+}
+
+func recoverMiddleware(c *fiber.Ctx) error {
+	defer func() {
+		if r := recover(); r != nil {
+			// Recover from panic and respond with an error message
+			c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Internal Server Error",
+			})
+		}
+	}()
+	// Continue to the next middleware or handler
+	return c.Next()
 }
 
 func storageRouter(app *fiber.App) {
