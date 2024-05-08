@@ -28,7 +28,7 @@ func SendError(errz error) error {
 
 	var resetColor = "\033[0m"
 	var firstColor = "\033[31m"
-	var startIcon = "\021"
+	// var startIcon = "\021"
 	var secondColor = "\033[34m"
 
 	appError := &AppError{
@@ -65,7 +65,8 @@ func SendError(errz error) error {
 		} else if len(parts) == 2 {
 			fieldName := strings.TrimSpace(strings.Trim(parts[0], ``))
 			fieldValue := strings.TrimSpace(strings.Trim(parts[1], ``))
-			fmt.Printf("%s.%v%s: %v%s\n", startIcon, firstColor, fieldName, secondColor, fieldValue)
+			// fmt.Printf("%s.%v%s: %v%s\n", startIcon, firstColor, fieldName, secondColor, fieldValue)
+			fmt.Printf("%s.%v%s: %v%s\n", firstColor, fieldName, secondColor, fieldValue)
 		} else {
 			fmt.Print(resetColor)
 		}
