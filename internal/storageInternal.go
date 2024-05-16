@@ -30,7 +30,7 @@ type IStorageInternal interface {
 
 type StorageInternal struct{}
 
-func New() IStorageInternal {
+func NewStorage() IStorageInternal {
 	return &StorageInternal{}
 }
 

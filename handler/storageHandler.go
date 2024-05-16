@@ -15,7 +15,7 @@ import (
 	"github.com/gofrs/uuid"
 )
 
-var storage = internal.New()
+var storage = internal.NewStorage()
 
 func SaveFile(c *fiber.Ctx) error {
 
@@ -121,7 +121,6 @@ func FilesList(c *fiber.Ctx) error {
 func GetFileData(c *fiber.Ctx) error {
 
 	id := c.Params("id")
-	storage := internal.New()
 	uuid, err := uuid.FromString(id)
 	if err != nil {
 		return err
@@ -144,7 +143,6 @@ func GetFileData(c *fiber.Ctx) error {
 func UpdateFileData(c *fiber.Ctx) error {
 
 	id := c.Params("id")
-	storage := internal.New()
 	uuid, err := uuid.FromString(id)
 	if err != nil {
 		return err
