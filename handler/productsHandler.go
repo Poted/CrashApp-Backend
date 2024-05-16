@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"go_app/backend/internal"
 	"go_app/backend/models"
 
@@ -19,17 +18,38 @@ func CreateProduct(c *fiber.Ctx) error {
 
 	err := c.BodyParser(&model)
 	if err != nil {
-		return fiber.NewError(400, err.Error())
+		return ErrorResponse(c, fiber.NewError(400, "wrong input; body is invalid"), nil)
 	}
 
 	createdProduct, err := productRepo.CreateProduct(ctx, model)
 	if err != nil {
-		return fiber.NewError(400, err.Error())
+		return ErrorResponse(c, fiber.NewError(400, "wrong input; query params are invalid"), nil)
 	}
 
-	fmt.Printf("createdProduct: %v\n", createdProduct)
+	return SuccessResponse(c, NewStatus(200, "successfully created a product"), createdProduct)
+}
 
-	return nil
+func GetProduct(c *fiber.Ctx) error {
+
+	ctx := c.UserContext()
+	id := uuid.FromStringOrNil(c.Params("id"))
+
+	if id == uuid.Nil {
+		return ErrorResponse(c, fiber.NewError(400, "wrong input; ID is invalid"), nil)
+	}
+	model := models.Product{ID: &id}
+
+	err := c.BodyParser(&model)
+	if err != nil {
+		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
+	}
+
+	updatedProduct, err := productRepo.GetProduct(ctx, &model)
+	if err != nil {
+		return ErrorResponse(c, fiber.NewError(500, err.Error()), nil)
+	}
+
+	return SuccessResponse(c, NewStatus(200, "successfully fetched product data"), updatedProduct)
 }
 
 func UpdateProduct(c *fiber.Ctx) error {
@@ -38,22 +58,19 @@ func UpdateProduct(c *fiber.Ctx) error {
 	id := uuid.FromStringOrNil(c.Params("id"))
 
 	if id == uuid.Nil {
-
-		CreateErrorResponse(c, fiber.NewError(400, "wrong input; ID missing"), nil)
+		return ErrorResponse(c, fiber.NewError(400, "wrong input; ID missing"), nil)
 	}
-	model := models.Product{}
+	model := models.Product{ID: &id}
 
 	err := c.BodyParser(&model)
 	if err != nil {
-		return fiber.NewError(400, err.Error())
+		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
 
 	updatedProduct, err := productRepo.UpdateProduct(ctx, &model)
 	if err != nil {
-		return fiber.NewError(400, err.Error())
+		return ErrorResponse(c, fiber.NewError(500, err.Error()), nil)
 	}
 
-	fmt.Printf("updatedProduct: %v\n", updatedProduct)
-
-	return nil
+	return SuccessResponse(c, NewStatus(200, "successfully updated a product"), updatedProduct)
 }

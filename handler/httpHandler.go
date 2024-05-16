@@ -70,6 +70,7 @@ func storageRouter(app *fiber.App) {
 func productsRouter(app *fiber.App) {
 
 	app.Post("/products/create", CreateProduct)
+	app.Get("/products/get/:id", GetProduct)
 	app.Patch("/products/update/:id", UpdateProduct)
 
 }
@@ -80,6 +81,24 @@ type Response struct {
 	Data    *interface{} `json:"data,omitempty"`
 }
 
+type Status struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func NewStatus(code int, message ...string) *Status {
+
+	return &Status{
+		Code: code,
+		Message: func() string {
+			if len(message) > 0 {
+				return message[0]
+			}
+			return ""
+		}(),
+	}
+}
+
 type ResponseType string
 
 const (
@@ -88,9 +107,9 @@ const (
 	StatusInfo    ResponseType = "info"
 )
 
-func CreateErrorResponse(c *fiber.Ctx, ferr *fiber.Error, data *interface{}) {
+func ErrorResponse(c *fiber.Ctx, ferr *fiber.Error, data *interface{}) error {
 
-	fmt.Printf("errorz.SendError(ferr): %v\n", errorz.SendError(ferr))
+	fmt.Print(errorz.SendError(ferr))
 
 	js, err := json.Marshal(Response{
 		Type:    StatusError,
@@ -98,11 +117,12 @@ func CreateErrorResponse(c *fiber.Ctx, ferr *fiber.Error, data *interface{}) {
 		Data:    data,
 	})
 	if err != nil {
-		errorz.SendError(err)
+		return errorz.SendError(err)
 	}
 
 	c.Status(ferr.Code).Send(js)
 
+	return nil
 }
 
 func CreateInfoResponse(ctx context.Context, message string, data interface{}) Response {
@@ -113,10 +133,18 @@ func CreateInfoResponse(ctx context.Context, message string, data interface{}) R
 	}
 }
 
-func CreateSuccessResponse(ctx context.Context, message string, data interface{}) Response {
-	return Response{
+func SuccessResponse(c *fiber.Ctx, ret *Status, data interface{}) error {
+
+	js, err := json.Marshal(Response{
 		Type:    StatusSuccess,
-		Message: message,
+		Message: ret.Message,
 		Data:    &data,
+	})
+	if err != nil {
+		return errorz.SendError(err)
 	}
+
+	c.Status(ret.Code).Send(js)
+
+	return nil
 }
