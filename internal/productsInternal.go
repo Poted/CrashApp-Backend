@@ -5,12 +5,15 @@ import (
 	"errors"
 	"go_app/backend/db"
 	"go_app/backend/models"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type IProductsInternal interface {
 	CreateProduct(ctx context.Context, product *models.Product) (*models.Product, error)
 	GetProduct(ctx context.Context, product *models.Product) (*models.Product, error)
 	UpdateProduct(ctx context.Context, product *models.Product) (*models.Product, error)
+	DeleteProduct(ctx context.Context, product *models.Product) *fiber.Error
 }
 
 type ProductsInternal struct{}
@@ -59,4 +62,17 @@ func (p *ProductsInternal) UpdateProduct(ctx context.Context, product *models.Pr
 	}
 
 	return product, nil
+}
+
+func (p *ProductsInternal) DeleteProduct(ctx context.Context, product *models.Product) *fiber.Error {
+
+	query := db.Database.
+		WithContext(ctx).
+		Delete(product)
+
+	if query.RowsAffected == 0 {
+		return fiber.NewError(400, "record not found")
+	}
+
+	return fiber.NewError(500, query.Error.Error())
 }

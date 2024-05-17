@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"go_app/backend/errorz"
@@ -72,6 +71,7 @@ func productsRouter(app *fiber.App) {
 	app.Post("/products/create", CreateProduct)
 	app.Get("/products/get/:id", GetProduct)
 	app.Patch("/products/update/:id", UpdateProduct)
+	app.Delete("/products/delete/:id", DeleteProduct)
 
 }
 
@@ -107,6 +107,22 @@ const (
 	StatusInfo    ResponseType = "info"
 )
 
+func SuccessResponse(c *fiber.Ctx, ret *Status, data interface{}) error {
+
+	js, err := json.Marshal(Response{
+		Type:    StatusSuccess,
+		Message: ret.Message,
+		Data:    &data,
+	})
+	if err != nil {
+		return errorz.SendError(err)
+	}
+
+	c.Status(ret.Code).Send(js)
+
+	return nil
+}
+
 func ErrorResponse(c *fiber.Ctx, ferr *fiber.Error, data *interface{}) error {
 
 	fmt.Print(errorz.SendError(ferr))
@@ -125,18 +141,10 @@ func ErrorResponse(c *fiber.Ctx, ferr *fiber.Error, data *interface{}) error {
 	return nil
 }
 
-func CreateInfoResponse(ctx context.Context, message string, data interface{}) Response {
-	return Response{
-		Type:    StatusInfo,
-		Message: message,
-		Data:    &data,
-	}
-}
-
-func SuccessResponse(c *fiber.Ctx, ret *Status, data interface{}) error {
+func CreateInfoResponse(c *fiber.Ctx, ret *Status, data interface{}) error {
 
 	js, err := json.Marshal(Response{
-		Type:    StatusSuccess,
+		Type:    StatusInfo,
 		Message: ret.Message,
 		Data:    &data,
 	})
