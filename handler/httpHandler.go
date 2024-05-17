@@ -8,35 +8,27 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	fiber_recover "github.com/gofiber/fiber/v2/middleware/recover"
 )
 
 func HttpClient() {
 
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("debug.Stack(): %v\n", debug.Stack())
-		}
-	}()
-
-	app := fiber.New()
-	app.Use(recoverMiddleware)
+	app := fiber.New(fiber.Config{
+		ProxyHeader: fiber.HeaderXForwardedFor,
+	})
+	app.Use(fiber_recover.New(
+		fiber_recover.Config{
+			EnableStackTrace: true,
+			StackTraceHandler: func(c *fiber.Ctx, e interface{}) {
+				fmt.Printf("debug.Stack(): %v\n", string(debug.Stack()))
+			},
+		},
+	))
 	app.Use(cors.New())
 	router(app)
+
 	app.Listen(":80")
 
-}
-
-func recoverMiddleware(c *fiber.Ctx) error {
-	defer func() {
-		if r := recover(); r != nil {
-			// Recover from panic and respond with an error message
-			c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "Internal Server Error",
-			})
-		}
-	}()
-	// Continue to the next middleware or handler
-	return c.Next()
 }
 
 func router(app *fiber.App) {
