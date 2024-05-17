@@ -3,7 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/gofiber/fiber/v2"
@@ -25,31 +25,9 @@ type GeoIPResponse struct {
 
 func getIP(c *fiber.Ctx) error {
 
-	ip := c.IP() // Example IP address, you can replace it with the actual IP
+	geoIP := GetIP(c)
 
-	// Fetch GeoIP information from the API
-	resp, err := http.Get("https://freegeoip.app/json/" + ip)
-	if err != nil {
-		fmt.Println("Error fetching GeoIP data:", err)
-		// return
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response body:", err)
-		// return
-	}
-
-	// Parse the JSON response
-	var geoIP GeoIPResponse
-	err = json.Unmarshal(body, &geoIP)
-	if err != nil {
-		fmt.Println("Error parsing JSON:", err)
-		// return
-	}
-
-	some := map[string]interface{}{
+	return c.JSON(map[string]interface{}{
 		"ip":           geoIP.IP,
 		"country_code": geoIP.CountryCode,
 		"country_name": geoIP.CountryName,
@@ -61,26 +39,29 @@ func getIP(c *fiber.Ctx) error {
 		"latitude":     geoIP.Latitude,
 		"longitude":    geoIP.Longitude,
 		"metro_code":   geoIP.MetroCode,
+	})
+}
+
+func GetIP(c *fiber.Ctx) *GeoIPResponse {
+
+	ip := c.IP()
+
+	resp, err := http.Get("https://freegeoip.app/json/" + ip)
+	if err != nil {
+		fmt.Println("Error fetching GeoIP data:", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response body:", err)
 	}
 
-	_ = some
+	var geoIP GeoIPResponse
+	err = json.Unmarshal(body, &geoIP)
+	if err != nil {
+		fmt.Println("Error parsing JSON:", err)
+	}
 
-	// return c.JSON(fiber.Map{
-	// 	"ip":           geoIP.IP,
-	// 	"country_code": geoIP.CountryCode,
-	// 	"country_name": geoIP.CountryName,
-	// 	"region_code":  geoIP.RegionCode,
-	// 	"region_name":  geoIP.RegionName,
-	// 	"city":         geoIP.City,
-	// 	"zip_code":     geoIP.ZipCode,
-	// 	"time_zone":    geoIP.TimeZone,
-	// 	"latitude":     geoIP.Latitude,
-	// 	"longitude":    geoIP.Longitude,
-	// 	"metro_code":   geoIP.MetroCode,
-	// })
-
-	// somefunc(c)
-
-	return nil
-
+	return &geoIP
 }
