@@ -45,7 +45,7 @@ func router(app *fiber.App) {
 
 func storageRouter(app *fiber.App) {
 
-	var storageHandler StorageHandler
+	storageHandler := NewStorageHandler()
 
 	// Files:
 

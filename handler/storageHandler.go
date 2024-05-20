@@ -14,13 +14,28 @@ import (
 	"github.com/h2non/filetype/types"
 )
 
+type IStorageHandler interface {
+	SaveFile(c *fiber.Ctx) error
+	FilesList(c *fiber.Ctx) error
+	GetFileData(c *fiber.Ctx) error
+	GetFile(c *fiber.Ctx) error
+	CreateFolder(c *fiber.Ctx) error
+	FoldersList(c *fiber.Ctx) error
+}
+
 type StorageHandler struct {
 	internal.IStorageInternal
 }
 
-func (h *StorageHandler) SaveFile(c *fiber.Ctx) error {
+func NewStorageHandler() IStorageHandler {
+	return &StorageHandler{
+		internal.NewStorage(),
+	}
+}
 
-	storage := internal.NewStorage()
+// var h.IStorageInternal = internal.NewStorage()
+
+func (h *StorageHandler) SaveFile(c *fiber.Ctx) error {
 
 	fileMultipart, err := c.FormFile("file_name")
 	if err != nil {
@@ -52,7 +67,7 @@ func (h *StorageHandler) SaveFile(c *fiber.Ctx) error {
 		return c.SaveFile(fileMultipart, path)
 	}
 
-	fileModel, err = storage.SaveFile(fileModel, saveFileFunc)
+	fileModel, err = h.IStorageInternal.SaveFile(fileModel, saveFileFunc)
 	if err != nil {
 		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
@@ -99,7 +114,7 @@ func (h *StorageHandler) FilesList(c *fiber.Ctx) error {
 		return ErrorResponse(c, fiber.NewError(400, "directory ID is invalid"), nil)
 	}
 
-	files, err := internal.NewStorage().FilesList(&directory_id)
+	files, err := h.IStorageInternal.FilesList(&directory_id)
 	if err != nil {
 		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
@@ -118,7 +133,7 @@ func (h *StorageHandler) GetFileData(c *fiber.Ctx) error {
 		return ErrorResponse(c, fiber.NewError(400, "file ID is invalid"), nil)
 	}
 
-	file, err := internal.NewStorage().GetFileData(&file_id)
+	file, err := h.IStorageInternal.GetFileData(&file_id)
 	if err != nil {
 		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
@@ -130,11 +145,11 @@ func (h *StorageHandler) GetFileData(c *fiber.Ctx) error {
 	return SuccessResponse(c, NewStatus(200), file)
 }
 
-func (h StorageHandler) GetFile(c *fiber.Ctx) error {
+func (h *StorageHandler) GetFile(c *fiber.Ctx) error {
 
 	id := uuid.FromStringOrNil(c.Params("file_id"))
 
-	fileModel, err := internal.NewStorage().GetFileData(&id)
+	fileModel, err := h.IStorageInternal.GetFileData(&id)
 	if err != nil {
 		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
@@ -148,7 +163,7 @@ func (h StorageHandler) GetFile(c *fiber.Ctx) error {
 
 }
 
-func (h StorageHandler) CreateFolder(c *fiber.Ctx) error {
+func (h *StorageHandler) CreateFolder(c *fiber.Ctx) error {
 
 	parent_id := uuid.FromStringOrNil(c.Params("parent_id"))
 	folderModel := models.Directory{
@@ -165,7 +180,7 @@ func (h StorageHandler) CreateFolder(c *fiber.Ctx) error {
 		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
 
-	folderModel, err = internal.NewStorage().CreateFolder(folderModel)
+	folderModel, err = h.IStorageInternal.CreateFolder(folderModel)
 	if err != nil {
 		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
@@ -175,12 +190,12 @@ func (h StorageHandler) CreateFolder(c *fiber.Ctx) error {
 
 func (h *StorageHandler) FoldersList(c *fiber.Ctx) error {
 
-	parent_id := uuid.FromStringOrNil(c.Params("parent_id"))
-	if parent_id == uuid.Nil {
+	parentID := uuid.FromStringOrNil(c.Params("parentID"))
+	if parentID == uuid.Nil {
 		return ErrorResponse(c, fiber.NewError(400, "directory ID is invalid"), nil)
 	}
 
-	folders, err := internal.NewStorage().FoldersList(&parent_id)
+	folders, err := h.IStorageInternal.FoldersList(&parentID)
 	if err != nil {
 		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}

@@ -21,17 +21,6 @@ type IStorageInternal interface {
 
 	CreateFolder(folderModel *models.Directory) (*models.Directory, error)
 	FoldersList(parentID *uuid.UUID) (*[]models.Directory, error)
-
-	// ReadFilesList() (*[]models.File, error)
-	// ReadFileData(id *uuid.UUID) (*models.File, error)
-	// UpdateFileData(id *uuid.UUID, fileModel *models.File) (*[]byte, error)
-	// DeleteFile(id *uuid.UUID) error
-
-	// CreateFolder(folder *models.Directory) (*models.Directory, error)
-	// ReadFoldersList() (*[]models.Directory, error)
-	// ReadFolderData(id *uuid.UUID, name string) (*models.Directory, error)
-	// UpdateFolderData(id *uuid.UUID, fieldsToUpdate *models.Directory) error
-	// DeleteFolder(id *uuid.UUID) error
 }
 
 type StorageInternal struct{}
@@ -76,6 +65,9 @@ func (s *StorageInternal) FilesList(directoryID *uuid.UUID) (*[]models.File, err
 
 	files := []models.File{}
 
+	// db.DBConnection()
+
+	// err := db.Database.Session(&gorm.Session{}).
 	err := db.Database.
 		Model(&models.File{}).
 		Where("directory_id = ?", directoryID).
@@ -111,8 +103,10 @@ func (s *StorageInternal) FoldersList(parentID *uuid.UUID) (*[]models.Directory,
 
 	folders := []models.Directory{}
 
-	err := db.Database.
-		Model(&models.File{}).
+	// sess := db.Database.Session(&gorm.Session{})
+
+	err := db.Database.Debug().
+		Model(&models.Directory{}).
 		Where("parent_id = ?", parentID).
 		Scan(&folders).
 		Error
