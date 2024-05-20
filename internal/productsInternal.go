@@ -2,9 +2,9 @@ package internal
 
 import (
 	"context"
-	"errors"
 	"go_app/backend/db"
 	"go_app/backend/models"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -13,7 +13,7 @@ type IProductsInternal interface {
 	CreateProduct(ctx context.Context, product *models.Product) (*models.Product, error)
 	GetProduct(ctx context.Context, product *models.Product) (*models.Product, error)
 	UpdateProduct(ctx context.Context, product *models.Product) (*models.Product, error)
-	DeleteProduct(ctx context.Context, product *models.Product) *fiber.Error
+	DeleteProduct(ctx context.Context, product *models.Product, withFiles bool) ([]string, *fiber.Error)
 }
 
 type ProductsInternal struct{}
@@ -58,21 +58,44 @@ func (p *ProductsInternal) UpdateProduct(ctx context.Context, product *models.Pr
 		return nil, query.Error
 	}
 	if query.RowsAffected == 0 {
-		return nil, errors.New("no rows affected")
+		return nil, fiber.NewError(400, "record not found")
 	}
 
 	return product, nil
 }
 
-func (p *ProductsInternal) DeleteProduct(ctx context.Context, product *models.Product) *fiber.Error {
+func (p *ProductsInternal) DeleteProduct(ctx context.Context, product *models.Product, withFiles bool) ([]string, *fiber.Error) {
 
-	query := db.Database.
+	tx := db.Database.Begin()
+
+	// productFiles := []string{}
+
+	query := tx.
 		WithContext(ctx).
 		Delete(product)
 
 	if query.RowsAffected == 0 {
-		return fiber.NewError(400, "record not found")
+		return nil, fiber.NewError(400, "record not found")
 	}
 
-	return fiber.NewError(500, query.Error.Error())
+	var deletedFiles []string
+	for _, v := range product.Files {
+		if err := os.Remove(v.FilePath(true)); err != nil {
+			return deletedFiles, fiber.NewError(500, query.Error.Error())
+		}
+		deletedFiles = append(deletedFiles, v.ID.String())
+	}
+
+	// tx.
+	// Model(models.ProductFile{}).
+	// Where("product_id = ?", product.ID).
+	// Select("file_id").
+	// Scan(&productFiles)
+
+	err := tx.Commit().Error
+	if err != nil {
+		return deletedFiles, fiber.NewError(500, query.Error.Error())
+	}
+
+	return deletedFiles, nil
 }

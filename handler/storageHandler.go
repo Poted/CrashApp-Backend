@@ -1,275 +1,193 @@
 package handler
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"go_app/backend/errorz"
 	"go_app/backend/internal"
 	"go_app/backend/models"
-	"log"
-	"os"
+	"mime/multipart"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofrs/uuid"
+	"github.com/h2non/filetype"
+	"github.com/h2non/filetype/types"
 )
 
-var storage = internal.NewStorage()
+type StorageHandler struct {
+	internal.IStorageInternal
+}
 
-func SaveFile(c *fiber.Ctx) error {
+func (h *StorageHandler) SaveFile(c *fiber.Ctx) error {
 
-	// Get file from request body
+	storage := internal.NewStorage()
+
 	fileMultipart, err := c.FormFile("file_name")
 	if err != nil {
-		errorz.SendError(err)
+		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
+	}
+
+	extention, err := readFileExtention(fileMultipart)
+	if err != nil {
+		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
+	}
+
+	if !strings.Contains(extention.MIME.Value, "image/") {
+		return ErrorResponse(c, fiber.NewError(400, fmt.Sprintf("cannot save file of type %s", extention.Extension)), nil)
+	}
+
+	if fileMultipart.Size > 250000 {
+		return ErrorResponse(c, fiber.NewError(400, "too big file"), nil)
 	}
 
 	directory_id := c.Params("directory_id")
 
-	generateID, err := uuid.NewV7()
-	if err != nil {
-		return errorz.SendError(err)
-	}
-
 	fileModel := models.File{
-		ID:   generateID,
-		Name: fileMultipart.Filename,
-		Size: fileMultipart.Size,
-		Directory: func() string {
-			if directory_id == "1" {
-				folder, err := storage.ReadFolderData(nil, "main")
-				if err != nil {
-					return ""
-				}
-				return folder.ID.String()
-			}
-			return directory_id
-		}(),
+		Name:      fileMultipart.Filename,
+		Size:      fileMultipart.Size,
+		Directory: directory_id,
+	}.NewFile()
+
+	saveFileFunc := func(path string) error {
+		return c.SaveFile(fileMultipart, path)
 	}
 
-	jsonDB, err := os.OpenFile("C:/Users/ojpkm/Documents/go_app/Database/files.json", os.O_RDWR|os.O_CREATE, 0644)
+	fileModel, err = storage.SaveFile(fileModel, saveFileFunc)
 	if err != nil {
-		log.Fatal(err)
-	}
-	defer jsonDB.Close()
-
-	// Decode the existing JSON data from the file
-	var files []models.File
-	decoder := json.NewDecoder(jsonDB)
-	if err := decoder.Decode(&files); err != nil && err.Error() != "EOF" {
-		log.Fatal(err)
+		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
 
-	// Append the new record to the existing data
-	files = append(files, fileModel)
-
-	// Seek to the beginning of the file to overwrite the existing data
-	if _, err := jsonDB.Seek(0, 0); err != nil {
-		log.Fatal(err)
-	}
-
-	// Create a JSON encoder and encode the updated data to the file
-	encoder := json.NewEncoder(jsonDB)
-	if err := encoder.Encode(files); err != nil {
-		log.Fatal(err)
-	}
-
-	// Save file to storage folder
-	err = c.SaveFile(fileMultipart, fmt.Sprintf("C:/Users/ojpkm/Documents/go_app/storage/%s", fileModel.ID))
-	if err != nil {
-		return err
-	}
-
-	return c.Status(201).SendString("Created")
+	return SuccessResponse(c, NewStatus(200, "Created"), fileModel)
 }
 
-func FilesList(c *fiber.Ctx) error {
+func readFileExtention(fileMultipart *multipart.FileHeader) (*types.Type, error) {
 
-	files, err := storage.ReadFilesList()
+	file, err := fileMultipart.Open()
 	if err != nil {
-		return errorz.SendError(err)
+		return nil, err
 	}
+	defer func() {
+		file.Seek(0, 0)
+		file.Close()
+	}()
 
-	id := c.Params("directory_id")
-
-	if id == "1" {
-
-		folder, err := storage.ReadFolderData(nil, "main")
-		if err != nil {
-			return errorz.SendError(err)
-		}
-		id = folder.ID.String()
-	}
-
-	output := []models.File{}
-
-	for _, v := range files {
-		if v.Directory == id {
-			output = append(output, v)
-		}
-	}
-
-	formatedData, err := json.Marshal(output)
+	// Read the first 261 bytes (enough for most file type detections)
+	head := make([]byte, 261)
+	_, err = file.Read(head)
 	if err != nil {
-		return errorz.SendError(err)
+		return nil, err
 	}
 
-	return c.Send(formatedData)
+	// Determine the file type
+	kind, err := filetype.Match(head)
+	if err != nil {
+		return nil, err
+	}
+
+	// If the file type is unknown, handle accordingly
+	if kind == filetype.Unknown {
+		return nil, errors.New("unknown file type")
+	}
+
+	return &kind, nil
 }
 
-func GetFileData(c *fiber.Ctx) error {
+func (h *StorageHandler) FilesList(c *fiber.Ctx) error {
 
-	id := c.Params("id")
-	uuid, err := uuid.FromString(id)
-	if err != nil {
-		return err
+	directory_id := uuid.FromStringOrNil(c.Params("directory_id"))
+	if directory_id == uuid.Nil {
+		return ErrorResponse(c, fiber.NewError(400, "directory ID is invalid"), nil)
 	}
 
-	fileData, err := storage.ReadFileData(&uuid)
+	files, err := internal.NewStorage().FilesList(&directory_id)
 	if err != nil {
-		return err
+		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
 
-	file, err := json.Marshal(fileData)
-	if err != nil {
-		return err
+	if len(*files) == 0 {
+		return SuccessResponse(c, NewStatus(200, "no files in this directory"), files)
 	}
 
-	return c.Send(file)
-
+	return SuccessResponse(c, NewStatus(200), files)
 }
 
-func UpdateFileData(c *fiber.Ctx) error {
+func (h *StorageHandler) GetFileData(c *fiber.Ctx) error {
 
-	id := c.Params("id")
-	uuid, err := uuid.FromString(id)
-	if err != nil {
-		return err
+	file_id := uuid.FromStringOrNil(c.Params("file_id"))
+	if file_id == uuid.Nil {
+		return ErrorResponse(c, fiber.NewError(400, "file ID is invalid"), nil)
 	}
 
-	var fileModel models.File
-	err = c.BodyParser(&fileModel)
+	file, err := internal.NewStorage().GetFileData(&file_id)
 	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "wrong data provided")
+		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
 
-	fileData, err := storage.UpdateFileData(&uuid, &fileModel)
-	if err != nil {
-		return err
+	if file.ID == uuid.Nil {
+		return ErrorResponse(c, fiber.NewError(400, "no such file"), nil)
 	}
 
-	return c.Status(200).Send(*fileData)
+	return SuccessResponse(c, NewStatus(200), file)
+}
+
+func (h StorageHandler) GetFile(c *fiber.Ctx) error {
+
+	id := uuid.FromStringOrNil(c.Params("file_id"))
+
+	fileModel, err := internal.NewStorage().GetFileData(&id)
+	if err != nil {
+		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
+	}
+
+	if fileModel == nil &&
+		fileModel.ID == uuid.Nil {
+		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
+	}
+
+	return c.SendFile(fileModel.FilePath(true))
 
 }
 
-func GetFile(c *fiber.Ctx) error {
+func (h StorageHandler) CreateFolder(c *fiber.Ctx) error {
 
-	id := c.Params("id")
-	uuid, err := uuid.FromString(id)
+	parent_id := uuid.FromStringOrNil(c.Params("parent_id"))
+	folderModel := models.Directory{
+		ParentID: parent_id,
+	}.NewDirectory()
+
+	err := c.BodyParser(&folderModel)
 	if err != nil {
-		return err
+		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
 
-	fileData, err := storage.ReadFileData(&uuid)
+	if folderModel == nil &&
+		folderModel.ID == uuid.Nil {
+		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
+	}
+
+	folderModel, err = internal.NewStorage().CreateFolder(folderModel)
 	if err != nil {
-		return err
+		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
 
-	file, err := os.ReadFile(fmt.Sprintf("C:/Users/ojpkm/Documents/go_app/Storage/%s", fileData.ID))
-	if err != nil {
-		return err
-	}
-
-	if file == nil {
-		return errors.New("cannot send a file")
-	}
-
-	if strings.Contains(fileData.Name, ".pdf") {
-		c.Set("Content-Type", "application/pdf")
-	} else {
-		c.Set("Content-Type", "image/jpeg")
-	}
-
-	c.Set("Content-Length", fmt.Sprint(file))
-
-	return c.Status(fiber.StatusOK).Send(file)
+	return SuccessResponse(c, NewStatus(200, "Created"), folderModel)
 }
 
-func DeleteFile(c *fiber.Ctx) error {
+func (h *StorageHandler) FoldersList(c *fiber.Ctx) error {
 
-	id := c.Params("id")
-	uuid, err := uuid.FromString(id)
+	parent_id := uuid.FromStringOrNil(c.Params("parent_id"))
+	if parent_id == uuid.Nil {
+		return ErrorResponse(c, fiber.NewError(400, "directory ID is invalid"), nil)
+	}
+
+	folders, err := internal.NewStorage().FoldersList(&parent_id)
 	if err != nil {
-		return c.Status(503).Send([]byte("cannot find a file"))
+		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
 
-	err = storage.DeleteFile(&uuid)
-	if err != nil {
-		return c.Status(503).Send([]byte("cannot find a file"))
+	if len(*folders) == 0 {
+		return SuccessResponse(c, NewStatus(200, "no folders in this directory"), folders)
 	}
 
-	return c.Status(204).Send([]byte("Succesfully removed file"))
-
-}
-
-func DeleteFolder(c *fiber.Ctx) error {
-
-	id := c.Params("id")
-	uuid, err := uuid.FromString(id)
-	if err != nil {
-		return c.Status(503).SendString(err.Error())
-	}
-
-	err = storage.DeleteFolder(&uuid)
-	if err != nil {
-		return c.Status(503).Send([]byte("cannot find a folder"))
-	}
-
-	return c.Status(204).Send([]byte("Succesfully removed a folder"))
-
-}
-
-func SaveFolder(c *fiber.Ctx) error {
-
-	body := models.Directory{}
-
-	err := c.BodyParser(&body)
-	if err != nil {
-		return c.Status(400).SendString(err.Error())
-	}
-
-	_, err = storage.CreateFolder(&body)
-	if err != nil {
-		return errorz.SendError(err)
-	}
-
-	return c.Status(201).Send([]byte("Succesfully created a file"))
-}
-
-func GetFolders(c *fiber.Ctx) error {
-
-	folders, err := storage.GetFolders()
-	if err != nil {
-		return err
-	}
-
-	return c.Status(200).JSON(folders)
-}
-
-func EditFolder(c *fiber.Ctx) error {
-
-	body := models.Directory{}
-
-	err := c.BodyParser(&body)
-	if err != nil {
-		return c.Status(400).SendString(err.Error())
-	}
-
-	err = storage.UpdateFolderData(&body.ID, &body)
-	if err == nil {
-		return c.Status(204).Send([]byte("Succesfully edited a file"))
-	}
-
-	return nil
+	return SuccessResponse(c, NewStatus(200), folders)
 }
