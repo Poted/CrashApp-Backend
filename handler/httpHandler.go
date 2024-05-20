@@ -31,32 +31,37 @@ func HttpClient() {
 
 }
 
+// ### Router ###
+
 func router(app *fiber.App) {
+
+	app.Get("/getIP", getIP)
+
 	storageRouter(app)
 	productsRouter(app)
 }
 
+// ### Storage Router ###
+
 func storageRouter(app *fiber.App) {
 
-	app.Get("/getIP", getIP)
+	var storageHandler StorageHandler
 
 	// Files:
 
-	app.Get("/filesList/:directory_id", FilesList)
-	app.Get("/getFileData/:id", GetFileData)
-	app.Patch("/updateFile/:id", UpdateFileData)
-	app.Get("/getFile/:id", GetFile)
-	app.Post("/saveFile/:directory_id", SaveFile)
-	app.Delete("/deleteFile/:id", DeleteFile)
+	app.Post("/saveFile/:directory_id", storageHandler.SaveFile)
+	app.Get("/filesList/:directory_id", storageHandler.FilesList)
+	app.Get("/fileData/:file_id", storageHandler.GetFileData)
+	app.Get("/file/:file_id", storageHandler.GetFile)
 
 	// Directories:
 
-	app.Post("/SaveFolder", SaveFolder)
-	app.Get("/GetFolders", GetFolders)
-	app.Put("/EditFolder", EditFolder)
-	app.Delete("/DeleteFolder/:id", DeleteFolder)
+	app.Post("/createFolder", storageHandler.CreateFolder)
+	app.Get("/foldersList/:parentID", storageHandler.FoldersList)
 
 }
+
+// ### Product Router ###
 
 func productsRouter(app *fiber.App) {
 
@@ -65,7 +70,11 @@ func productsRouter(app *fiber.App) {
 	app.Patch("/products/update/:id", UpdateProduct)
 	app.Delete("/products/delete/:id", DeleteProduct)
 
+	app.Get("/products/download/product_id/:id", DownloadProducts)
+
 }
+
+//																																				//
 
 type Response struct {
 	Type    ResponseType `json:"type"`
@@ -110,9 +119,7 @@ func SuccessResponse(c *fiber.Ctx, ret *Status, data interface{}) error {
 		return errorz.SendError(err)
 	}
 
-	c.Status(ret.Code).Send(js)
-
-	return nil
+	return c.Status(ret.Code).Send(js)
 }
 
 func ErrorResponse(c *fiber.Ctx, ferr *fiber.Error, data *interface{}) error {
@@ -128,9 +135,7 @@ func ErrorResponse(c *fiber.Ctx, ferr *fiber.Error, data *interface{}) error {
 		return errorz.SendError(err)
 	}
 
-	c.Status(ferr.Code).Send(js)
-
-	return nil
+	return c.Status(ferr.Code).Send(js)
 }
 
 func CreateInfoResponse(c *fiber.Ctx, ret *Status, data interface{}) error {
@@ -144,7 +149,5 @@ func CreateInfoResponse(c *fiber.Ctx, ret *Status, data interface{}) error {
 		return errorz.SendError(err)
 	}
 
-	c.Status(ret.Code).Send(js)
-
-	return nil
+	return c.Status(ret.Code).Send(js)
 }

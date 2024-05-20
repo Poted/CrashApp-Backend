@@ -80,6 +80,8 @@ func DeleteProduct(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	id := uuid.FromStringOrNil(c.Params("id"))
 
+	withFiles := c.Query("with-files")
+
 	if id == uuid.Nil {
 		return ErrorResponse(c, fiber.NewError(400, "wrong input; ID missing"), nil)
 	}
@@ -90,10 +92,25 @@ func DeleteProduct(c *fiber.Ctx) error {
 		return ErrorResponse(c, fiber.NewError(400, err.Error()), nil)
 	}
 
-	ferr := productRepo.DeleteProduct(ctx, &model)
+	_, ferr := productRepo.DeleteProduct(ctx, &model, func() bool {
+		return withFiles == "true"
+	}())
 	if ferr != nil {
 		return ErrorResponse(c, ferr, nil)
 	}
 
 	return SuccessResponse(c, NewStatus(201, "successfully deleted a product"), nil)
+}
+
+func DownloadProducts(c *fiber.Ctx) error {
+
+	id := c.Params("id")
+
+	product := models.File{
+		ID: uuid.FromStringOrNil(id),
+	}
+
+	path := product.FilePath(true)
+
+	return c.Download(path)
 }

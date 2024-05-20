@@ -20,6 +20,7 @@ require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
+	github.com/h2non/filetype v1.1.3
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.16.3 // indirect

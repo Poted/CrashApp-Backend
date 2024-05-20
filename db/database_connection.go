@@ -33,8 +33,6 @@ func MigrateModels() {
 
 func DBConnection() error {
 
-	// docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=M1croshitSqlServer' -p 1433:1433 --name sql_server_container -d mcr.microsoft.com/mssql/server:latest
-
 	var err error
 
 	dbOnce.Do(func() {
