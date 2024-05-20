@@ -8,6 +8,7 @@ import (
 
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var (
@@ -39,12 +40,15 @@ func DBConnection() error {
 
 		connectionString := "sqlserver://sa:M1croshitSqlServer@localhost:1433?database=crashapp"
 
-		Database, err = gorm.Open(sqlserver.Open(connectionString), &gorm.Config{})
+		Database, err = gorm.Open(sqlserver.Open(connectionString), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Info),
+		})
 		if err != nil {
 			err = errorz.SendError(err)
 		}
 
-		Database = Database.Set("gorm:insert_option", "ON CONFLICT DO NOTHING")
+		// Let the hellfire burn this line of code:
+		// Database = Database.Set("gorm:insert_option", "ON CONFLICT DO NOTHING")
 
 	})
 
