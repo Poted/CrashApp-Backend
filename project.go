@@ -1,12 +1,10 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"go_app/backend/db"
 	"go_app/backend/errorz"
 	"go_app/backend/handler"
-	"go_app/backend/internal"
 )
 
 func main() {
@@ -19,17 +17,17 @@ func main() {
 
 	db.MigrateModels()
 
-	payServ := internal.PaymentMethodService{}
+	// payServ := internal.PaymentMethodService[models.Country]{}
 
-	x, _ := payServ.Get().ByCountry(context.Background(), 2)
+	// x, _ := payServ.Get().ByCountry(context.Background(), 2)
 
-	fmt.Printf("x: %v\n", x)
+	// fmt.Printf("x: %v\n", x)
 
-	payServ.Set().ByCountry(context.Background(), "Brazylia", 2)
+	// payServ.Set().ByCountry(context.Background(), "Brazylia", 2)
 
-	x, _ = payServ.Get().ByCountry(context.Background(), 2)
+	// x, _ = payServ.Get().ByCountry(context.Background(), 2)
 
-	fmt.Printf("x: %v\n", x)
+	// fmt.Printf("x: %v\n", x)
 
 	handler.HttpClient()
 

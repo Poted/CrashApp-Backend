@@ -11,36 +11,52 @@ type PaymentMethodService struct {
 	Currencies      []models.Currency
 	ShippingMethods []models.ShippingMethod
 	Groups          []models.Group
+	// Locals          T
 }
 
-type PaymentMethodServiceGetter struct {
+type PaymentMethodServiceGetter[T ILocals] struct {
 	ByCountry        GetByPreference
 	ByCurrency       GetByPreference
 	ByShippingMethod GetByPreference
 	ByGroup          GetByPreference
+	Locals           T
 }
 
 type PaymentMethodServiceSetter struct {
-	ByCountry        SetUsingPreference
-	ByCurrency       SetUsingPreference
+
+	// ByCountry(context.Context, name, IDs) error
+	ByCountry SetUsingPreference
+	// ByCurrency(context.Context, name, IDs) error
+	ByCurrency SetUsingPreference
+	// ByShipping(context.Context, name, IDs) error
 	ByShippingMethod SetUsingPreference
-	ByGroup          SetUsingPreference
+	// ByGroup(context.Context, name, IDs) error
+	ByGroup SetUsingPreference
 }
 
-type GetByPreference func(context.Context, int) (string, error)
+type ILocals interface {
+	models.Country | models.Currency | models.ShippingMethod | models.Group
+}
+
+type GetByPreference func(context.Context, int) error
+
+// type GetByPreference func(context.Context, int) (string, error)
 
 type SetUsingPreference func(context.Context, string, ...uint) error
 
-func (*PaymentMethodService) Get() *PaymentMethodServiceGetter {
-	return &PaymentMethodServiceGetter{
-		ByCountry:        getPaymentPreferenceByCountryService,
-		ByCurrency:       getPaymentPreferenceByCurrencyService,
-		ByShippingMethod: getPaymentPreferenceByShippingService,
-		ByGroup:          getPaymentPreferenceByGroupService,
+func (pms *PaymentMethodService) Get() *PaymentMethodServiceGetter[T] {
+
+	pmsg := &PaymentMethodServiceGetter{
+		ByCountry: getPaymentPreferenceByCountryService,
+		// ByCurrency:       getPaymentPreferenceByCurrencyService,
+		// ByShippingMethod: getPaymentPreferenceByShippingService,
+		// ByGroup:          getPaymentPreferenceByGroupService,
 	}
+
+	return pmsg
 }
 
-func (*PaymentMethodService) Set() *PaymentMethodServiceSetter {
+func (*PaymentMethodService[T]) Set() *PaymentMethodServiceSetter {
 	return &PaymentMethodServiceSetter{
 		ByCountry:        setPaymentPreferenceByCountryService,
 		ByCurrency:       setPaymentPreferenceByCurrencyService,
@@ -52,6 +68,8 @@ func (*PaymentMethodService) Set() *PaymentMethodServiceSetter {
 //	### GETTERS ###
 
 func getPaymentPreferenceByCountryService(ctx context.Context, unitID int) error {
+
+	// func getPaymentPreferenceByCountryService(ctx context.Context, unitID int) error {
 
 	// ### TO DO: ###
 	// func getPaymentPreferenceByCountryService(ctx context.Context, unitID ...int) (string, error) {
@@ -69,6 +87,7 @@ func getPaymentPreferenceByCountryService(ctx context.Context, unitID int) error
 		Error
 
 	return err
+	// return country.Name, err
 }
 
 func getPaymentPreferenceByCurrencyService(ctx context.Context, unitID int) (string, error) {
