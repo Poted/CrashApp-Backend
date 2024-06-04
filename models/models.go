@@ -16,3 +16,12 @@ func Products() []interface{} {
 		Product{},
 	)
 }
+
+func Locale() []interface{} {
+	return List(
+		Country{},
+		Currency{},
+		ShippingMethod{},
+		Group{},
+	)
+}
