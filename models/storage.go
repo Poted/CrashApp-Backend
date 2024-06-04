@@ -10,21 +10,21 @@ import (
 )
 
 type File struct {
-	ID        uuid.UUID `gorm:"primaryKey" json:"id"`
-	Name      string    `gorm:"index:idx_name_directory,unique" json:"name"`
-	Size      int64     `json:"size"`
-	Directory string    `gorm:"index:idx_name_directory,unique" json:"directory_id"`
-	Products  []Product `gorm:"many2many:product_files;"`
+	ID          uuid.UUID `gorm:"primaryKey" json:"id"`
+	Name        string    `gorm:"index:idx_name_directory,unique" json:"name"`
+	Size        int64     `json:"size"`
+	DirectoryID uuid.UUID `gorm:"index:idx_name_directory,unique; column:directory_id" json:"directory_id"`
+	Products    []Product `gorm:"many2many:product_files;"`
 }
 
 func (f File) NewFile() *File {
 	ID, _ := uuid.NewV7()
 	return &File{
-		ID:        ID,
-		Name:      f.Name,
-		Size:      f.Size,
-		Directory: f.Directory,
-		Products:  f.Products,
+		ID:          ID,
+		Name:        f.Name,
+		Size:        f.Size,
+		DirectoryID: f.DirectoryID,
+		Products:    f.Products,
 	}
 }
 

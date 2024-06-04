@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"go_app/backend/helperz"
 	"go_app/backend/internal"
 	"go_app/backend/models"
 	"mime/multipart"
@@ -58,9 +59,9 @@ func (h *StorageHandler) SaveFile(c *fiber.Ctx) error {
 	directory_id := c.Params("directory_id")
 
 	fileModel := models.File{
-		Name:      fileMultipart.Filename,
-		Size:      fileMultipart.Size,
-		Directory: directory_id,
+		Name:        fileMultipart.Filename,
+		Size:        fileMultipart.Size,
+		DirectoryID: uuid.FromStringOrNil(directory_id),
 	}.NewFile()
 
 	saveFileFunc := func(path string) error {
@@ -108,6 +109,8 @@ func readFileExtention(fileMultipart *multipart.FileHeader) (*types.Type, error)
 }
 
 func (h *StorageHandler) FilesList(c *fiber.Ctx) error {
+
+	helperz.AvailableGoroutines()
 
 	directory_id := uuid.FromStringOrNil(c.Params("directory_id"))
 	if directory_id == uuid.Nil {
