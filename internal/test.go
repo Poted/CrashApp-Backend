@@ -125,7 +125,11 @@ func setPaymentPreferenceByCountryService(ctx context.Context, name string, paym
 			Error
 
 	} else {
-		// countries = append(countries, name)
+
+		e = db.Database.
+			Create(&models.Country{Name: name}).
+			Error
+
 	}
 
 	return e

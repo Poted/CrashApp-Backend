@@ -41,51 +41,25 @@ func main() {
 		Name: "POLSKA GUROM",
 	}
 
-	// fmt.Printf("payServ.Countries: %v\n", payServ.Countries)
 	fmt.Printf("payServ.locals: %v\n", payServ.Locals)
 	fmt.Printf("payServ.locals.name: %v\n", payServ.Locals.Name)
-	// fmt.Printf("payServ.Countries: %v\n", payServ.Currencies)
 
-	// x, _ := payServ.Get().ByCountry(context.Background(), 2)
+	payServ.Set().ByCountry(context.Background(), "Tajlandia")
+	err = payServ.Set().ByCountry(context.Background(), "Mozambik", 2)
+	// err = payServ.Set().ByCountry(context.Background(), "Mozambik", 1, 2)
+	if err != nil {
+		errorz.SendError(err)
+	}
 
-	// fmt.Printf("x: %v\n", x)
+	err = payServ.Get().ByCountry(context.Background(), 2)
+	if err != nil {
+		errorz.SendError(err)
+	}
 
-	// payServ.Set().ByCountry(context.Background(), "Brazylia", 2)
+	fmt.Printf("payServ.locals.name: %v\n", payServ.Locals.Name)
 
-	// x, _ = payServ.Get().ByCountry(context.Background(), 2)
-
-	// fmt.Printf("x: %v\n", x)
+	fmt.Printf("x: %v\n", err)
 
 	handler.HttpClient()
 
-}
-
-func Hello() {
-
-	serv := Server{
-		TransformName: addPrefix,
-	}
-
-	serv.HandkeRequest("Whatever")
-
-}
-
-type Server struct {
-	TransformName TransformFunc
-}
-
-type TransformFunc func(string) string
-
-func addPrefix(input string) string {
-
-	return input + " xD"
-}
-
-func (s *Server) HandkeRequest(fileName string) error {
-
-	transName := s.TransformName(fileName)
-
-	fmt.Printf("transName: %v\n", transName)
-
-	return nil
 }
