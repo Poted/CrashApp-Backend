@@ -6,32 +6,22 @@ import (
 	"go_app/backend/models"
 )
 
-type PaymentMethodService struct {
-	Countries       []models.Country
-	Currencies      []models.Currency
-	ShippingMethods []models.ShippingMethod
-	Groups          []models.Group
-	// Locals          T
+type PaymentMethodService[T ILocals] struct {
+	Locals *T
 }
 
-type PaymentMethodServiceGetter[T ILocals] struct {
+type PaymentMethodServiceGetter struct {
 	ByCountry        GetByPreference
 	ByCurrency       GetByPreference
 	ByShippingMethod GetByPreference
 	ByGroup          GetByPreference
-	Locals           T
 }
 
 type PaymentMethodServiceSetter struct {
-
-	// ByCountry(context.Context, name, IDs) error
-	ByCountry SetUsingPreference
-	// ByCurrency(context.Context, name, IDs) error
-	ByCurrency SetUsingPreference
-	// ByShipping(context.Context, name, IDs) error
+	ByCountry        SetUsingPreference
+	ByCurrency       SetUsingPreference
 	ByShippingMethod SetUsingPreference
-	// ByGroup(context.Context, name, IDs) error
-	ByGroup SetUsingPreference
+	ByGroup          SetUsingPreference
 }
 
 type ILocals interface {
@@ -40,44 +30,33 @@ type ILocals interface {
 
 type GetByPreference func(context.Context, int) error
 
-// type GetByPreference func(context.Context, int) (string, error)
-
 type SetUsingPreference func(context.Context, string, ...uint) error
 
-func (pms *PaymentMethodService) Get() *PaymentMethodServiceGetter[T] {
+func (pms *PaymentMethodService[T]) Get() *PaymentMethodServiceGetter {
 
-	pmsg := &PaymentMethodServiceGetter{
-		ByCountry: getPaymentPreferenceByCountryService,
-		// ByCurrency:       getPaymentPreferenceByCurrencyService,
-		// ByShippingMethod: getPaymentPreferenceByShippingService,
-		// ByGroup:          getPaymentPreferenceByGroupService,
+	return &PaymentMethodServiceGetter{
+		ByCountry:        getPaymentPreferenceByCountryService,
+		ByCurrency:       getPaymentPreferenceByCurrencyService,
+		ByShippingMethod: getPaymentPreferenceByShippingService,
+		ByGroup:          getPaymentPreferenceByGroupService,
 	}
 
-	return pmsg
 }
 
 func (*PaymentMethodService[T]) Set() *PaymentMethodServiceSetter {
+
 	return &PaymentMethodServiceSetter{
 		ByCountry:        setPaymentPreferenceByCountryService,
 		ByCurrency:       setPaymentPreferenceByCurrencyService,
 		ByShippingMethod: setPaymentPreferenceByShippingService,
 		ByGroup:          setPaymentPreferenceByGroupService,
 	}
+
 }
 
 //	### GETTERS ###
 
 func getPaymentPreferenceByCountryService(ctx context.Context, unitID int) error {
-
-	// func getPaymentPreferenceByCountryService(ctx context.Context, unitID int) error {
-
-	// ### TO DO: ###
-	// func getPaymentPreferenceByCountryService(ctx context.Context, unitID ...int) (string, error) {
-	// Make a func that will take zero parameters: returning all items
-	// one parameter: one object
-	// multiple IDS: objects with given IDs
-
-	// Make those functions just for retrieving data from arrays/slices and make a db call when it's needed
 
 	country := models.Country{}
 
@@ -87,10 +66,9 @@ func getPaymentPreferenceByCountryService(ctx context.Context, unitID int) error
 		Error
 
 	return err
-	// return country.Name, err
 }
 
-func getPaymentPreferenceByCurrencyService(ctx context.Context, unitID int) (string, error) {
+func getPaymentPreferenceByCurrencyService(ctx context.Context, unitID int) error {
 
 	currency := models.Country{}
 
@@ -99,10 +77,10 @@ func getPaymentPreferenceByCurrencyService(ctx context.Context, unitID int) (str
 		First(&currency).
 		Error
 
-	return currency.Name, err
+	return err
 }
 
-func getPaymentPreferenceByShippingService(ctx context.Context, unitID int) (string, error) {
+func getPaymentPreferenceByShippingService(ctx context.Context, unitID int) error {
 
 	method := models.Country{}
 
@@ -111,10 +89,10 @@ func getPaymentPreferenceByShippingService(ctx context.Context, unitID int) (str
 		First(&method).
 		Error
 
-	return method.Name, err
+	return err
 }
 
-func getPaymentPreferenceByGroupService(ctx context.Context, unitID int) (string, error) {
+func getPaymentPreferenceByGroupService(ctx context.Context, unitID int) error {
 
 	group := models.Country{}
 
@@ -123,7 +101,7 @@ func getPaymentPreferenceByGroupService(ctx context.Context, unitID int) (string
 		First(&group).
 		Error
 
-	return group.Name, err
+	return err
 }
 
 //	### SETTERS ###
