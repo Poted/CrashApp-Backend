@@ -55,21 +55,15 @@ func (pms *PaymentMethodService[T]) Get() *PaymentMethodServiceGetter {
 
 	}
 
-	some := PaymentMethodService[T]{
-		Countries: []models.Country{
-			{
-				Name: "Greenland",
-			},
-		},
-	}
-
-	fmt.Printf("some: %v\n", some)
-
 	pms.Countries = []models.Country{
 		{
 			Name: "MERICA FUCK YEAH",
 		},
 	}
+	// pms.Locals = T(pms.Countries[models.NewProduct().Category])
+	// pms.Locals = T(pms.Countries[2])
+
+	pms.Locals = T(pms.Countries[0])
 
 	return pmsg
 }

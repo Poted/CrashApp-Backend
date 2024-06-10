@@ -37,6 +37,9 @@ func main() {
 	// }
 
 	fmt.Printf("payServ.Countries: %v\n", payServ.Countries)
+	fmt.Printf("payServ.currency: %v\n", payServ.Currencies)
+	fmt.Printf("payServ.locals: %v\n", payServ.Locals)
+	fmt.Printf("payServ.locals.name: %v\n", payServ.Locals.Name)
 	// fmt.Printf("payServ.Countries: %v\n", payServ.Currencies)
 
 	// x, _ := payServ.Get().ByCountry(context.Background(), 2)
