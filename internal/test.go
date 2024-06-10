@@ -2,24 +2,24 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"go_app/backend/db"
 	"go_app/backend/models"
 )
 
-type PaymentMethodService struct {
+type PaymentMethodService[T ILocals] struct {
 	Countries       []models.Country
 	Currencies      []models.Currency
 	ShippingMethods []models.ShippingMethod
 	Groups          []models.Group
-	// Locals          T
+	Locals          T
 }
 
-type PaymentMethodServiceGetter[T ILocals] struct {
+type PaymentMethodServiceGetter struct {
 	ByCountry        GetByPreference
 	ByCurrency       GetByPreference
 	ByShippingMethod GetByPreference
 	ByGroup          GetByPreference
-	Locals           T
 }
 
 type PaymentMethodServiceSetter struct {
@@ -40,17 +40,35 @@ type ILocals interface {
 
 type GetByPreference func(context.Context, int) error
 
+// type GetByPreference func(context.Context, int) error
 // type GetByPreference func(context.Context, int) (string, error)
 
 type SetUsingPreference func(context.Context, string, ...uint) error
 
-func (pms *PaymentMethodService) Get() *PaymentMethodServiceGetter[T] {
+func (pms *PaymentMethodService[T]) Get() *PaymentMethodServiceGetter {
 
 	pmsg := &PaymentMethodServiceGetter{
-		ByCountry: getPaymentPreferenceByCountryService,
-		// ByCurrency:       getPaymentPreferenceByCurrencyService,
+		ByCountry:  getPaymentPreferenceByCountryService,
+		ByCurrency: getPaymentPreferenceByCurrencyService,
 		// ByShippingMethod: getPaymentPreferenceByShippingService,
 		// ByGroup:          getPaymentPreferenceByGroupService,
+
+	}
+
+	some := PaymentMethodService[T]{
+		Countries: []models.Country{
+			{
+				Name: "Greenland",
+			},
+		},
+	}
+
+	fmt.Printf("some: %v\n", some)
+
+	pms.Countries = []models.Country{
+		{
+			Name: "MERICA FUCK YEAH",
+		},
 	}
 
 	return pmsg
@@ -90,7 +108,9 @@ func getPaymentPreferenceByCountryService(ctx context.Context, unitID int) error
 	// return country.Name, err
 }
 
-func getPaymentPreferenceByCurrencyService(ctx context.Context, unitID int) (string, error) {
+func getPaymentPreferenceByCurrencyService(ctx context.Context, unitID int) error {
+
+	fmt.Printf("\"Hiii\": %v\n", "second function")
 
 	currency := models.Country{}
 
@@ -99,7 +119,7 @@ func getPaymentPreferenceByCurrencyService(ctx context.Context, unitID int) (str
 		First(&currency).
 		Error
 
-	return currency.Name, err
+	return err
 }
 
 func getPaymentPreferenceByShippingService(ctx context.Context, unitID int) (string, error) {
