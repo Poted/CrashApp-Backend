@@ -2,8 +2,10 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"go_app/backend/db"
 	"go_app/backend/models"
+	"sync"
 )
 
 type PaymentMethodService[T ILocals] struct {
@@ -28,19 +30,30 @@ type ILocals interface {
 	models.Country | models.Currency | models.ShippingMethod | models.Group
 }
 
-type GetByPreference func(context.Context, int) error
+type GetByPreference func(context.Context, int, chan<- *models.Locale, *sync.WaitGroup) error
 
 type SetUsingPreference func(context.Context, string, ...uint) error
 
 func (pms *PaymentMethodService[T]) Get() *PaymentMethodServiceGetter {
 
-	return &PaymentMethodServiceGetter{
+	some := *pms.Locals
+	_ = some
+
+	someMore := &PaymentMethodServiceGetter{
 		ByCountry:        getPaymentPreferenceByCountryService,
 		ByCurrency:       getPaymentPreferenceByCurrencyService,
 		ByShippingMethod: getPaymentPreferenceByShippingService,
 		ByGroup:          getPaymentPreferenceByGroupService,
 	}
 
+	xd := someMore.ByCountry
+
+	fmt.Printf("xd: %v\n", xd)
+
+	// someMore.val = some
+
+	return someMore
+	// return nil
 }
 
 func (*PaymentMethodService[T]) Set() *PaymentMethodServiceSetter {
@@ -56,50 +69,81 @@ func (*PaymentMethodService[T]) Set() *PaymentMethodServiceSetter {
 
 //	### GETTERS ###
 
-func getPaymentPreferenceByCountryService(ctx context.Context, unitID int) error {
+func (s *PaymentMethodService[T]) AddPrefix() {
 
-	country := models.Country{}
+}
+
+func getPaymentPreferenceByCountryService(ctx context.Context, unitID int, ch chan<- *models.Locale, wg *sync.WaitGroup) error {
+
+	defer wg.Done()
+
+	country := models.Locale{}.Country
 
 	err := db.Database.
 		Where("id = ?", unitID).
 		First(&country).
 		Error
 
+	select {
+	// case ch <- country:
+	case ch <- &models.Locale{Country: country}:
+	case <-ctx.Done():
+		fmt.Println("Fetch cancelled for ID:", unitID)
+	}
+
 	return err
 }
 
-func getPaymentPreferenceByCurrencyService(ctx context.Context, unitID int) error {
+func getPaymentPreferenceByCurrencyService(ctx context.Context, unitID int, ch chan<- *models.Locale, wg *sync.WaitGroup) error {
 
-	currency := models.Country{}
+	currency := models.Currency{}
 
 	err := db.Database.
 		Where("id = ?", unitID).
 		First(&currency).
 		Error
 
+	select {
+	case ch <- &models.Locale{Currency: currency}:
+	case <-ctx.Done():
+		fmt.Println("Fetch cancelled for ID:", unitID)
+	}
+
 	return err
 }
 
-func getPaymentPreferenceByShippingService(ctx context.Context, unitID int) error {
+func getPaymentPreferenceByShippingService(ctx context.Context, unitID int, ch chan<- *models.Locale, wg *sync.WaitGroup) error {
 
-	method := models.Country{}
+	method := models.ShippingMethod{}
 
 	err := db.Database.
 		Where("id = ?", unitID).
 		First(&method).
 		Error
 
+	select {
+	case ch <- &models.Locale{ShippingMethod: method}:
+	case <-ctx.Done():
+		fmt.Println("Fetch cancelled for ID:", unitID)
+	}
+
 	return err
 }
 
-func getPaymentPreferenceByGroupService(ctx context.Context, unitID int) error {
+func getPaymentPreferenceByGroupService(ctx context.Context, unitID int, ch chan<- *models.Locale, wg *sync.WaitGroup) error {
 
-	group := models.Country{}
+	group := models.Group{}
 
 	err := db.Database.
 		Where("id = ?", unitID).
 		First(&group).
 		Error
+
+	select {
+	case ch <- &models.Locale{Group: group}:
+	case <-ctx.Done():
+		fmt.Println("Fetch cancelled for ID:", unitID)
+	}
 
 	return err
 }

@@ -19,17 +19,17 @@ var (
 func MigrateModels() {
 
 	if Database != nil {
-		err := Database.AutoMigrate(models.Storage()...)
+		err := Database.AutoMigrate(models.StorageList()...)
 		if err != nil {
 			errorz.SendError(errors.New("cannot migrate storage"))
 		}
 
-		err = Database.AutoMigrate(models.Products()...)
+		err = Database.AutoMigrate(models.ProductsList()...)
 		if err != nil {
 			errorz.SendError(errors.New("cannot migrate products"))
 		}
 
-		err = Database.AutoMigrate(models.Locale()...)
+		err = Database.AutoMigrate(models.LocaleList()...)
 		if err != nil {
 			errorz.SendError(errors.New("cannot migrate products"))
 		}

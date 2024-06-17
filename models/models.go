@@ -1,27 +1,34 @@
 package models
 
-func List(category ...interface{}) []interface{} {
-	return category
+func List(items ...interface{}) []interface{} {
+	return items
 }
 
-func Storage() []interface{} {
+func StorageList() []interface{} {
 	return List(
 		Directory{},
 		File{},
 	)
 }
 
-func Products() []interface{} {
+func ProductsList() []interface{} {
 	return List(
 		Product{},
 	)
 }
 
-func Locale() []interface{} {
+func LocaleList() []interface{} {
 	return List(
 		Country{},
 		Currency{},
 		ShippingMethod{},
 		Group{},
 	)
+}
+
+type Locale struct {
+	Country
+	Currency
+	ShippingMethod
+	Group
 }
