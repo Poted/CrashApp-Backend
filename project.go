@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"go_app/backend/db"
 	"go_app/backend/errorz"
 	"go_app/backend/handler"
@@ -21,17 +20,17 @@ func main() {
 
 	db.MigrateModels()
 
-	payServ, hell := newFunction(err)
+	// payServ, hell := newFunction(err)
 
-	fmt.Printf("hell: %v\n", hell)
+	// fmt.Printf("hell: %v\n", hell)
 
-	fmt.Printf("payServ.Locals.Name: %v\n", payServ.Locals.Name)
-	payServ.Locals = &models.Country{
-		Name: "Second main",
-	}
+	// fmt.Printf("payServ.Locals.Name: %v\n", payServ.Locals.Name)
+	// payServ.Locals = &models.Country{
+	// 	Name: "Second main",
+	// }
 
-	fmt.Printf("payServ.locals: %v\n", payServ.Locals)
-	fmt.Printf("payServ.locals.name: %v\n", payServ.Locals.Name)
+	// fmt.Printf("payServ.locals: %v\n", payServ.Locals)
+	// fmt.Printf("payServ.locals.name: %v\n", payServ.Locals.Name)
 
 	// payServ.Set().ByCountry(context.Background(), "set Tajlandia")
 	// err = payServ.Set().ByCountry(context.Background(), "set Georgia", 67)
@@ -58,7 +57,7 @@ func newFunction(err error) (internal.PaymentMethodService[models.Country], *mod
 		wg.Add(1)
 		go func(ctx context.Context, i int, ch chan *models.Locale, wg *sync.WaitGroup) {
 
-			err = payServ.Get().ByCountry(context.Background(), 67, ch, wg)
+			err = payServ.Get("hello moto", wg).ByCountry(context.Background(), 67, ch, wg)
 			if err != nil {
 				errorz.SendError(err)
 			}

@@ -23,6 +23,7 @@ func LocaleList() []interface{} {
 		Currency{},
 		ShippingMethod{},
 		Group{},
+		ShippingCountry{},
 	)
 }
 

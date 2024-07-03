@@ -13,6 +13,8 @@ type PaymentMethodService[T ILocals] struct {
 }
 
 type PaymentMethodServiceGetter struct {
+	wq               *sync.WaitGroup
+	dataChan         chan *models.Locale
 	ByCountry        GetByPreference
 	ByCurrency       GetByPreference
 	ByShippingMethod GetByPreference
@@ -34,7 +36,7 @@ type GetByPreference func(context.Context, int, chan<- *models.Locale, *sync.Wai
 
 type SetUsingPreference func(context.Context, string, ...uint) error
 
-func (pms *PaymentMethodService[T]) Get() *PaymentMethodServiceGetter {
+func (pms *PaymentMethodService[T]) Get(input string, wg *sync.WaitGroup) *PaymentMethodServiceGetter {
 
 	some := *pms.Locals
 	_ = some
@@ -46,11 +48,10 @@ func (pms *PaymentMethodService[T]) Get() *PaymentMethodServiceGetter {
 		ByGroup:          getPaymentPreferenceByGroupService,
 	}
 
-	xd := someMore.ByCountry
-
-	fmt.Printf("xd: %v\n", xd)
-
+	// mode := T{}
 	// someMore.val = some
+
+	someMore.wq = wg
 
 	return someMore
 	// return nil
