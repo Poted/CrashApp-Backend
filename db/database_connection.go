@@ -76,40 +76,57 @@ func CloseDB(db *gorm.DB) error {
 
 // Function to populate the countries table
 func populateCountries(db *gorm.DB) {
-	countries := []string{"Szwecja", "Estornia", "Bułgaria"}
+
+	countries := []string{"Nigeria", "Estornia", "Bułgaria"}
+
+	countryModels := []models.Currency{}
 
 	for _, name := range countries {
-		country := models.Country{Name: name}
-		db.Create(&country)
+		countryModels = append(countryModels, models.Currency{Name: name})
 	}
+
+	db.Create(&countryModels)
 }
 
 // Function to populate the currencies table
 func populateCurrencies(db *gorm.DB) {
+
 	currencies := []string{"Korona", "Zloty", "Euro"}
 
+	currencyModels := []models.Currency{}
+
 	for _, name := range currencies {
-		currency := models.Currency{Name: name}
-		db.Create(&currency)
+		currencyModels = append(currencyModels, models.Currency{Name: name})
 	}
+
+	db.Create(&currencyModels)
 }
 
 // Function to populate the shippingMethods table
 func populateShippingMethods(db *gorm.DB) {
+
 	shippingMethods := []string{"Chiny", "Inpost", "DHL"}
+	methodModels := []models.ShippingMethod{}
 
 	for _, name := range shippingMethods {
-		method := models.ShippingMethod{Name: name}
-		db.Create(&method)
+		methodModels = append(methodModels, models.ShippingMethod{Name: name})
 	}
+
+	db.Create(&methodModels)
+
 }
 
 // Function to populate the groups table
 func populateGroups(db *gorm.DB) {
+
 	groups := []string{"Klienci", "Goscie", "VIP"}
 
+	groupModels := []models.Group{}
+
 	for _, name := range groups {
-		group := models.Group{Name: name}
-		db.Create(&group)
+		groupModels = append(groupModels, models.Group{Name: name})
 	}
+
+	db.Create(&groupModels)
+
 }
